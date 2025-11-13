@@ -18,7 +18,7 @@ def exh_sch(
         C: int, M: int, K:int, ce: list[int], ne: list[int], 
         quant: list[int], mill_clas: list[list[bool]],act_pen: int,
         act_sol:list[int], used: list[int], best_pen: int, 
-        best_sol: list[int], start, arch
+        best_sol: list[int], start, arch, lasts
         ):
     if act_pen >= best_pen:
         return best_pen
@@ -47,15 +47,27 @@ def exh_sch(
         if used[k] < quant[k]:
             act_sol.append(k)
             used[k] += 1
-
-            new_p = add_pen(M, L + 1, ne, mill_clas, act_sol, ce)
+            L += 1
+            new_p = 0
+            for m in range(M):
+                if mill_clas[k][m]:
+                    lasts[m] += 1
+                if L > ne[m] and mill_clas[act_sol[-ne[m] - 1]][m]:
+                    lasts[m] -= 1
+                if lasts[m] > ce[m]:
+                    new_p += lasts[m] - ce[m]
             best_pen = exh_sch(
                 C, M, K, ce, ne, quant, mill_clas,
                 act_pen + new_p, act_sol, used,
-                best_pen, best_sol, start, arch
+                best_pen, best_sol, start, arch, lasts
                 )
 
-
+            for m in range(M):
+                if mill_clas[k][m]:
+                    lasts[m] -= 1
+                if L > ne[m] and mill_clas[act_sol[-ne[m] - 1]][m]:
+                    lasts[m] += 1
+            L -= 1
             used[k] -= 1
             act_sol.pop()
     return best_pen     
@@ -81,9 +93,10 @@ def main():
     start = time.time() 
     C, M, K, ce, ne, quant, mill_clas = read_prob()
     arch = argv[1]
+    lasts = [0]*M
     _ = exh_sch(
         C, M, K, ce, ne, quant, mill_clas,
-        0, [],[0]*K, C*C*M, [0]*C, start, arch
+        0, [],[0]*K, C*C*M, [0]*C, start, arch, lasts
         )
     print(round(time.time() - start))
    
