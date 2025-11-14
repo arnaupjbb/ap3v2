@@ -4,6 +4,11 @@ from sys import *
 
 
 def add_pen(M, L, ne, mill_clas, act_sol, ce) -> int:
+    """ Given some information of the problem (M, L, ne, mill_clas, ce) and the partial solution, 
+    it returns the penalty caused by the last addition . It can be used for the starting
+    intervals too (even if they are shorter than the ne), but does not return the penalty 
+    to add for the last shorter intervals"""
+
     new_p = 0
     for m in range(M):
         count = 0
@@ -14,12 +19,18 @@ def add_pen(M, L, ne, mill_clas, act_sol, ce) -> int:
             new_p += count - ce[m]
     return new_p
 
+
 def exh_sch(
         C: int, M: int, K:int, ce: list[int], ne: list[int], 
         quant: list[int], mill_clas: list[list[bool]],act_pen: int,
         act_sol:list[int], used: list[int], best_pen: int, 
         best_sol: list[int], start, arch
         ):
+    
+    """It returns the solution with less penalty given a problem and a partial solution
+    and modifies the list best_sol giving the solution with the best solution found, it writes
+    the best solution found in the given output file when found, next to its penalty and time spent 
+    to found it"""
     if act_pen >= best_pen:
         return best_pen
     L: int = len(act_sol)
@@ -32,16 +43,16 @@ def exh_sch(
                     count += 1
                 if count > ce[m]:
                     act_pen += count - ce[m]
+                if act_pen >= best_pen: return best_pen
                 
                 
-        if act_pen < best_pen:
-            best_pen = act_pen
-            best_sol = act_sol
-            with open(arch,"w") as f: 
-                endi = time.time()
-                print(best_pen, round(endi - start,1), file=f)
-                print(' '.join(map(str, best_sol)), file=f)
-        return best_pen
+
+        best_sol = act_sol
+        with open(arch,"w") as f: 
+            endi = time.time()
+            print(act_pen, round(endi - start,1), file=f)
+            print(' '.join(map(str, best_sol)), file=f)
+        return act_pen
     
     for k in range(K):
         if used[k] < quant[k]:
@@ -61,7 +72,7 @@ def exh_sch(
     return best_pen     
 
 def read_prob() -> tuple[int, int, int, list[int], list[int], list[int], list[list[bool]]]:
-    """Llegeix el problema i retorna totes les dades de l'entrada"""
+    """Reads the problem and returns its data"""
     C, M, K = read(int), read(int), read(int)
     ce = [read(int) for _ in range(M)]  # quantitat que podem fer
     ne = [read(int) for _ in range(M)]  # per cada ne cotxes
