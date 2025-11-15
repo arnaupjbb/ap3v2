@@ -2,7 +2,8 @@ from yogi import *
 import time
 from sys import *
 
-
+#VERSIO DEL 2 ON, SI TENIM MATEIXA PENALITZACIÓ, MIREM TANT QUE PESI MÉS COM QUE SIGUI DIFERENT DE L'ANTERIOR
+# VERSIO 22
 def add_pen(M, L, ne, mill_clas, act_sol, ce) -> int:
     """ Given some information of the problem (M, L, ne, mill_clas, ce) and the partial solution, 
     it returns the penalty caused by the last addition . It can be used for the starting
@@ -19,10 +20,20 @@ def add_pen(M, L, ne, mill_clas, act_sol, ce) -> int:
             new_p += count - ce[m]
     return new_p
 
+def is_better(k, pos_pen, next_k, next_pen, prop_next, pens, quant, used) -> bool:
+    if pos_pen < next_pen:
+        return True
+    if pos_pen > next_pen:
+        return False
+    if pens[k] > pens[next_k]:
+        return True
+    if pens[k] < pens[next_k]:
+        return False
+    return prop_next > used[k]/quant[k]
 
 def greedy(
         C: int, M: int, K:int, ce: list[int], ne: list[int], 
-        quant: list[int], mill_clas: list[list[bool]]
+        quant: list[int], mill_clas: list[list[bool]], pens:list[int]
         ):
     
     """Given a problem, generates a good solution using a greedy algorithm"""
@@ -31,14 +42,15 @@ def greedy(
     used = [0]*K
     for i in range(C):
         next_pen = C*C*M
-        next_k = -1
+        next_k = 0
+        prop_next =  1.1
         for k in range(K):
             if used[k] < quant[k] :
                 pos_pen = add_pen(M, i+1, ne, mill_clas, act_sol + [k], ce)
-                if pos_pen < next_pen:
+                if is_better(k, pos_pen, next_k, next_pen, prop_next, pens, quant, used):
                     next_pen = pos_pen
                     next_k  = k
-                # if pos_pen == 0: break
+                    prop_next = used[k]/quant[k]
         used[next_k] += 1
         act_sol.append(next_k)
         act_pen += next_pen
@@ -52,12 +64,12 @@ def greedy(
     return act_pen, act_sol
             
 
-def read_prob() -> tuple[int, int, int, list[int], list[int], list[int], list[list[bool]]]:
+def read_prob() -> tuple[int, int, int, list[int], list[int], list[int], list[list[bool]], list[int]]:
     """Reads the problem and returns its data"""
     C, M, K = read(int), read(int), read(int)
     ce = [read(int) for _ in range(M)]  # quantitat que podem fer
     ne = [read(int) for _ in range(M)]  # per cada ne cotxes
-    
+    pens = [0]*K
     quant = []                          # cotxes de cada classe
     mill_clas = [[] for _ in range(K)]  # la classe i requereix la millora j?
 
@@ -65,17 +77,20 @@ def read_prob() -> tuple[int, int, int, list[int], list[int], list[int], list[li
         read(int)
         quant.append(read(int))
         for j in range(M):
-            mill_clas[i].append(bool(read(int)))
-    return C, M, K, ce, ne, quant, mill_clas
+            have = bool(read(int))
+            mill_clas[i].append(have)
+            if have:
+                pens[i] += 1
+    return C, M, K, ce, ne, quant, mill_clas, pens
 
 
 
 def main():
     start = time.time()
-    C, M, K, ce, ne, quant, mill_clas = read_prob()
+    C, M, K, ce, ne, quant, mill_clas, pens = read_prob()
     arch = argv[1]
     best_pen, best_sol = greedy(
-        C, M, K, ce, ne, quant, mill_clas
+        C, M, K, ce, ne, quant, mill_clas, pens
         )
     with open(arch,"w") as f: 
         endi = time.time()

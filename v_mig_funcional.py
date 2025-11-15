@@ -2,7 +2,7 @@ from yogi import *
 import time
 from sys import *
 
-
+### VERSIO AMB LASTS, MÉS LENTA
 def add_pen(M, L, ne, mill_clas, act_sol, ce) -> int:
     new_p = 0
     for m in range(M):

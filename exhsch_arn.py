@@ -3,6 +3,8 @@ import time
 from sys import *
 
 
+### MILLOR VERSIÓ TROBADA FINS EL MOMENT
+
 def add_pen(M, L, ne, mill_clas, act_sol, ce) -> int:
     """ Given some information of the problem (M, L, ne, mill_clas, ce) and the partial solution, 
     it returns the penalty caused by the last addition . It can be used for the starting
