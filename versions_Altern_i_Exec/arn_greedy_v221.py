@@ -29,7 +29,7 @@ def is_better22(k, pos_pen, next_k, next_pen, prop_next, pens, quant, used) -> b
         return True
     if pens[k] < pens[next_k]:
         return False
-    return prop_next > used[k]/quant[k]
+    return prop_next > quant[k] - used[k]
 
 def greedy(
         C: int, M: int, K:int, ce: list[int], ne: list[int], 
@@ -43,14 +43,14 @@ def greedy(
     for i in range(C):
         next_pen = C*C*M
         next_k = 0
-        prop_next =  1.1
+        prop_next =  C+1
         for k in range(K):
             if used[k] < quant[k] :
                 pos_pen = add_pen(M, i+1, ne, mill_clas, act_sol + [k], ce)
                 if is_better22(k, pos_pen, next_k, next_pen, prop_next, pens, quant, used):
                     next_pen = pos_pen
                     next_k  = k
-                    prop_next = used[k]/quant[k]
+                    prop_next = quant[k] - used[k]
         used[next_k] += 1
         act_sol.append(next_k)
         act_pen += next_pen
@@ -92,7 +92,7 @@ def main():
     best_pen, best_sol = greedy(
         C, M, K, ce, ne, quant, mill_clas, pens
         )
-    with open("greedy_sols_22","a") as f: 
+    with open("greedy_sols_221","a") as f: 
         endi = time.time()
         print(best_pen, round(endi - start,1), file=f)
         print(' '.join(map(str, best_sol)), file=f)
