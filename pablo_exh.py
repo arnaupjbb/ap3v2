@@ -4,22 +4,27 @@ import sys
 
 def nou_cost(sol: list[int], millores:list[list[int]], idx: int, ce: list[int], ne:list[int]) -> int:
     M = len(ce)
+    C = len(sol)
     nou_cost = 0
-    estacions_ocupades = [0]*M
     for i in range(M):
+        ocupacio_estacio = 0
         for j in range(idx, max(-1, idx-ne[i]), -1):
-            estacions_ocupades[i] += millores[sol[j]][i]
-    dif = [max(0, estacions_ocupades[i]-ce[i]) for i in range(M)]
-    nou_cost += sum(dif)
-    if idx == len(sol) - 1:
-        nou_cost += sum(max((n-1)*(n)//2, 0) for n in dif)
+            ocupacio_estacio += millores[sol[j]][i]
+        nou_cost += max(0, ocupacio_estacio - ce[i])
     return nou_cost
 
 def min_pen_rec(sol: list[int], classes_restants: list[int], millores: list[list[int]], cost_actual: int, idx: int, ce: list[int], ne: list[int], min_cost: list[int], inici: float):
     C = len(sol)
     M = len(millores[0])
     K = len(millores)
+    if cost_actual >= min_cost[0]:
+        return cost_actual, sol
     if idx == C:
+        for i in range(M):
+            ocupacio_estacio = 0
+            for j in range(idx-1, max(-1, idx-ne[i]), -1):
+                ocupacio_estacio += millores[sol[j]][i]
+                cost_actual += max(0, ocupacio_estacio - ce[i])
         if cost_actual < min_cost[0]:
             min_cost[0] = cost_actual
             try:
@@ -27,14 +32,11 @@ def min_pen_rec(sol: list[int], classes_restants: list[int], millores: list[list
                     final = time()
                     print(cost_actual, round(final - inici,1), file=f)
                     print(' '.join(map(str, sol)), file=f)
-                return cost_actual, sol.copy()
             except IndexError:
                 print("Error. No s'ha rebut cap fitxer de sortida")
                 min_cost[0] = -1
                 return -1, sol
         return cost_actual, sol.copy()
-    elif cost_actual >= min_cost[0]:
-        return cost_actual, sol
     else:
         best_cost = sys.maxsize
         best_sol = [-1]*C
@@ -87,5 +89,3 @@ def main():
 main()
 
     
-
-
