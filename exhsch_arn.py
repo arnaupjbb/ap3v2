@@ -5,35 +5,38 @@ from sys import *
 
 ### MILLOR VERSIÓ TROBADA FINS EL MOMENT
 
-def add_pen(M, L, ne, mill_clas, act_sol, ce) -> int:
+def add_pen(M, L, ne, mill_clas, act_sol, ce) -> tuple[int, int]:
     """ Given some information of the problem (M, L, ne, mill_clas, ce) and the partial solution, 
     it returns the penalty caused by the last addition . It can be used for the starting
     intervals too (even if they are shorter than the ne), but does not return the penalty 
     to add for the last shorter intervals"""
 
     new_p = 0
+    app = 0
     for m in range(M):
         count = 0
         for i in range(max(L - ne[m], 0), L):
             if mill_clas[act_sol[i]][m]:
                 count += 1
         if count > ce[m]:
-            new_p += count - ce[m]
-    return new_p
+            addin = count - ce[m]
+            new_p += addin
+            app += addin*(addin - 1)//2
+    return new_p, app
 
 
 def exh_sch(
         C: int, M: int, K:int, ce: list[int], ne: list[int], 
         quant: list[int], mill_clas: list[list[bool]],act_pen: int,
         act_sol:list[int], used: list[int], best_pen: int, 
-        best_sol: list[int], start, arch
+        start, arch, addprox:int
         ):
     
     """It returns the solution with less penalty given a problem and a partial solution
     and modifies the list best_sol giving the solution with the best solution found, it writes
     the best solution found in the given output file when found, next to its penalty and time spent 
     to found it"""
-    if act_pen >= best_pen:
+    if act_pen + addprox >= best_pen:
         return best_pen
     L: int = len(act_sol)
 
@@ -49,11 +52,10 @@ def exh_sch(
                 
                 
 
-        best_sol = act_sol
         with open(arch,"w") as f: 
             endi = time.time()
             print(act_pen, round(endi - start,1), file=f)
-            print(' '.join(map(str, best_sol)), file=f)
+            print(' '.join(map(str, act_sol)), file=f)
         return act_pen
     
     for k in range(K):
@@ -61,11 +63,11 @@ def exh_sch(
             act_sol.append(k)
             used[k] += 1
 
-            new_p = add_pen(M, L + 1, ne, mill_clas, act_sol, ce)
+            new_p, addprox = add_pen(M, L + 1, ne, mill_clas, act_sol, ce)
             best_pen = exh_sch(
                 C, M, K, ce, ne, quant, mill_clas,
                 act_pen + new_p, act_sol, used,
-                best_pen, best_sol, start, arch
+                best_pen, start, arch, addprox
                 )
 
 
@@ -96,7 +98,7 @@ def main():
     arch = argv[1]
     _ = exh_sch(
         C, M, K, ce, ne, quant, mill_clas,
-        0, [],[0]*K, C*C*M, [0]*C, start, arch
+        0, [],[0]*K, C*C*M, start, arch, 0
         )
     print(round(time.time() - start))
    
