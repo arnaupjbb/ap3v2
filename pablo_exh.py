@@ -6,8 +6,8 @@ import sys
 def nou_cost(
     sol: list[int], millores: list[list[int]], idx: int, ce: list[int], ne: list[int]
 )-> tuple[int, int]:
-"""Retorna la suma dels costos de cada estació per a l'interval [max(idx-ne[i], 0), idx] per cada i. 
-També retorna una cota inferior de la penalització futura a partir de la solució fins a idx."""
+    """Retorna la suma dels costos de cada estació per a l'interval [max(idx-ne[i], 0), idx] per cada i. 
+    També retorna una cota inferior de la penalització futura a partir de la solució fins a idx."""
     M = len(ce)
     C = len(sol)
     nou_cost = 0
@@ -34,10 +34,10 @@ def min_pen_rec(
     inici: float,
     aprox: int
 ) -> int:
-"""Funció recursiva que retorna donada una solució parcial el mínim cost trobat fins el moment.
-Si es troba una solució millor, s'actualitza el fitxer que apareix en la línia de comandes i 
-s'escriu en ell el valor de la penalització total, el temps que s'ha trigat des de l'inici de 
-l'algorisme i l'ordre de fabricació dels cotxes per aquella solcuió."""
+    """Funció recursiva que retorna donada una solució parcial el mínim cost trobat fins el moment.
+    Si es troba una solució millor, s'actualitza el fitxer que apareix en la línia de comandes i 
+    s'escriu en ell el valor de la penalització total, el temps que s'ha trigat des de l'inici de 
+    l'algorisme i l'ordre de fabricació dels cotxes per aquella solcuió."""
     C = len(sol)
     M = len(millores[0])
     K = len(millores)
@@ -92,8 +92,8 @@ def min_pen(
     ne: list[int],
     inici: float,
 ) -> int:
-"""Retorna el mínim cost de fabricació donats una matriu de millores, un vector de 
-capacitats ce, un vector de finestres ne i els cotxes a fabricar de cada classe cotxes_classe"""
+    """Retorna el mínim cost de fabricació donats una matriu de millores, un vector de 
+    capacitats ce, un vector de finestres ne i els cotxes a fabricar de cada classe cotxes_classe"""
     sol = [-1] * C
     classes_restants = cotxes_classe.copy()
     cost_actual = 0
