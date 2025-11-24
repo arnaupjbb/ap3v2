@@ -13,12 +13,13 @@ def add_pen(M, L, ne, mill_clas, act_sol, ce) -> tuple[int, int]:
     addprox = 0
     for m in range(M):
         count = 0
-        for i in range(max(L - ne[m], 0), L):
+        for i in range(L-1, max(L - ne[m] - 1, -1), -1):
             if mill_clas[act_sol[i]][m]:
                 count += 1
+            if count > ce[m]:
+                addprox += count - ce[m]
         if count > ce[m]:
             new_p += count - ce[m]
-            addprox += (count - ce[m])*(count - ce[m] - 1)//2
     return new_p, addprox
 
 def usrate(M, K, rem, used, quants, mill_clas):
@@ -32,13 +33,13 @@ def usrate(M, K, rem, used, quants, mill_clas):
     return remain_rate
 
 def is_better22(k, pos_pen, next_k, next_pen, prop_next, pens, quant, used, addprox, next_addprox, val) -> bool:
-    if pos_pen != next_pen:
-        return pos_pen < next_pen
+    if pos_pen + addprox != next_pen + next_addprox:
+        return pos_pen + addprox < next_pen + next_addprox
+    if prop_next != used[k] -quant[k]:
+        return prop_next > used[k] -quant[k]
     if val[k] != val[next_k]:
         return val[k] > val[next_k]
-    if pens[k] > pens[next_k]:
-        return pens[k] > pens[next_k]
-    return prop_next > used[k]/quant[k]
+    return pens[k] > pens[next_k]
 
 def greedy(
         C: int, M: int, K:int, ce: list[int], ne: list[int], 
@@ -55,7 +56,7 @@ def greedy(
         rem = usrate(M, K, C-i, used, quant, mill_clas)
         val = [-1.]*K
         next_k = 0
-        prop_next =  1.1
+        prop_next =  -1
         for k in range(K):
             if used[k] < quant[k] :
                 pos_pen, addprox = add_pen(M, i+1, ne, mill_clas, act_sol + [k], ce)
@@ -66,7 +67,7 @@ def greedy(
                     next_pen = pos_pen
                     next_pen_add = addprox
                     next_k  = k
-                    prop_next = used[k]/quant[k]
+                    prop_next = used[k] - quant[k]
         used[next_k] += 1
         act_sol.append(next_k)
         act_pen += next_pen
@@ -108,7 +109,7 @@ def main():
     best_pen, best_sol = greedy(
         C, M, K, ce, ne, quant, mill_clas, pens
         )
-    with open(arch,"w") as f: 
+    with open(arch,"a") as f: 
         endi = time.time()
         print(best_pen, round(endi - start,1), file=f)
         print(' '.join(map(str, best_sol)), file=f)

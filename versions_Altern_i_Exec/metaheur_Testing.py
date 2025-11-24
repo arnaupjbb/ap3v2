@@ -1,8 +1,8 @@
 from yogi import *
 import time
 from sys import *
+import random
 
-#VERSIO ON MIREM menys pen_add -> mes suma remain -> mes penalitzacions de clase -> menys percentatge d'us
 def add_pen(M, L, ne, mill_clas, act_sol, ce) -> tuple[int, int]:
     """ Given some information of the problem (M, L, ne, mill_clas, ce) and the partial solution, 
     it returns the penalty caused by the last addition . It can be used for the starting
@@ -32,15 +32,15 @@ def usrate(M, K, rem, used, quants, mill_clas):
     return remain_rate
 
 def is_better22(k, pos_pen, next_k, next_pen, prop_next, pens, quant, used, addprox, next_addprox, val) -> bool:
-    if pos_pen != next_pen:
-        return pos_pen < next_pen
+    if pos_pen + addprox != next_pen + next_addprox:
+        return pos_pen + addprox < next_pen + next_addprox
+    if prop_next != used[k] -quant[k]:
+        return prop_next > used[k] -quant[k]
     if val[k] != val[next_k]:
         return val[k] > val[next_k]
-    if pens[k] > pens[next_k]:
-        return pens[k] > pens[next_k]
-    return prop_next > used[k]/quant[k]
+    return pens[k] > pens[next_k]
 
-def greedy(
+def rangreedy(
         C: int, M: int, K:int, ce: list[int], ne: list[int], 
         quant: list[int], mill_clas: list[list[bool]], pens:list[int]
         ):
@@ -55,18 +55,18 @@ def greedy(
         rem = usrate(M, K, C-i, used, quant, mill_clas)
         val = [-1.]*K
         next_k = 0
-        prop_next =  1.1
+        prop_next =  -1
         for k in range(K):
             if used[k] < quant[k] :
                 pos_pen, addprox = add_pen(M, i+1, ne, mill_clas, act_sol + [k], ce)
                 for m in range(M):
                     if mill_clas[k][m]:
                         val[k] += rem[m]
-                if is_better22(k, pos_pen, next_k, next_pen, prop_next, pens, quant, used, addprox, next_pen_add, val):
+                if is_better22(k, pos_pen, next_k, next_pen, prop_next, pens, quant, used, addprox, next_pen_add, val) or random.randint(1, 100) == 1:
                     next_pen = pos_pen
                     next_pen_add = addprox
                     next_k  = k
-                    prop_next = used[k]/quant[k]
+                    prop_next = used[k] - quant[k]
         used[next_k] += 1
         act_sol.append(next_k)
         act_pen += next_pen
@@ -100,17 +100,66 @@ def read_prob() -> tuple[int, int, int, list[int], list[int], list[int], list[li
     return C, M, K, ce, ne, quant, mill_clas, pens
 
 
+def calc_pen(solution, ce, ne, mill_clas):
+    C, M, K = len(solution), len(mill_clas[0]), len(mill_clas)
+    pen = 0
+    for i in range(C):
+        np, _ = add_pen(M, i+1, ne, mill_clas, solution[:i+1], ce)
+        pen += np
+    for m in range(M):
+        count = 0
+        for i in range(C-1, max(C - ne[m], -1), -1):
+            if mill_clas[solution[i]][m]:
+                count += 1
+            if count > ce[m]:
+                pen += count - ce[m]
+    return pen
 
+def init_permut(quants):
+    q = quants.copy()
+    sol = []
+    for i in range(len(q)):
+        while q[i] > 0:
+            sol.append(i)
+            q[i] -= 1
+    return sol
+        
+def metaheur(C, M, K, ce, ne, quant, mill_clas, pens, arch, start):
+    is_g = False
+    best_pen, best_sol = C*C*C*M*M*K, init_permut(quant)
+    with open(arch,"w") as f: 
+        endi = time.time()
+        print("greedy", best_pen, round(endi - start,1), file=f)
+        print(' '.join(map(str, best_sol)), file=f)
+    iter = 0
+    alfa = 0.3
+    T = 10.
+    last_best = 0
+    real_best_sol, real_best_pen = best_sol, best_pen
+    while True:
+        is_g = False
+        pos1 = random.randint(0, C-1)
+        pos2 = random.randint(0, C-1)
+        new_sol = best_sol.copy()
+        new_sol[pos1], new_sol[pos2] = new_sol[pos2], new_sol[pos1]
+        new_pen = calc_pen(new_sol, ce, ne, mill_clas)
+        if new_pen < best_pen or (random.uniform(0,1) < 2.71828**(-(new_pen - best_pen)/(T))):
+            best_sol = new_sol[:]
+            best_pen = new_pen
+            if new_pen < real_best_pen:
+                real_best_pen = new_pen
+                real_best_sol = new_sol[:]
+                last_best = iter
+            with open(arch,"a") as f: 
+                endi = time.time()
+                print(iter, real_best_pen, round(endi - start,1), file=f)
+                print(' '.join(map(str, real_best_sol)), file=f)
+        iter += 1
+        T *= alfa
 def main():
     start = time.time()
     C, M, K, ce, ne, quant, mill_clas, pens = read_prob()
     arch = argv[1]
-    best_pen, best_sol = greedy(
-        C, M, K, ce, ne, quant, mill_clas, pens
-        )
-    with open(arch,"w") as f: 
-        endi = time.time()
-        print(best_pen, round(endi - start,1), file=f)
-        print(' '.join(map(str, best_sol)), file=f)
-   
+    metaheur(C, M, K, ce, ne, quant, mill_clas, pens, arch, start)
+    
 main()
