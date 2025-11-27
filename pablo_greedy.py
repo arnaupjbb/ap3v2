@@ -15,7 +15,7 @@ def nou_cost(
         ocupacio_estacio = 0
         for j in range(idx, max(-1, idx - ne[i]), -1):
             ocupacio_estacio += millores[sol[j]][i]
-            cost += max(0, ocupacio_estacio - ce[i])
+        cost += max(0, ocupacio_estacio - ce[i])
     return cost
 
 
@@ -41,6 +41,7 @@ def min_pen(
             if classes_restants[j] > 0:
                 sol[i] = j
                 cost = nou_cost(sol, millores, i, ce, ne)
+                print(sol[i], cost, "", end = '')
                 if cost < best_cost:
                     best_cost = cost
                     best_class = j
@@ -49,12 +50,14 @@ def min_pen(
                         best_class = j
         classes_restants[best_class] -= 1
         sol[i] = best_class
+        print()
+        print(sol, best_cost)
         total_cost += best_cost
     for i in range(M):
         ocupacio_estacio = 0
-        for j in range(max(C - ne[i], 0), C - 1):
+        for j in range(C-1, max(-1, C - ne[i]), -1):
             ocupacio_estacio += millores[sol[j]][i]
-            best_cost += max(0, ocupacio_estacio - ce[i])
+            total_cost += max(0, ocupacio_estacio - ce[i])
     try:
         with open(sys.argv[1], "w") as f:
             final = time()

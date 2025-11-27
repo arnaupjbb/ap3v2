@@ -1,0 +1,137 @@
+from yogi import *
+from time import time
+import sys
+
+
+def nou_cost(
+    sol: list[int], millores: list[list[int]], idx: int, ce: list[int], ne: list[int]
+)-> tuple[int, int]:
+    """Retorna la suma dels costos de cada estació per a l'interval [max(idx-ne[i], 0), idx] per cada i. 
+    També retorna una cota inferior de la penalització futura a partir de la solució fins a idx."""
+    M = len(ce)
+    C = len(sol)
+    nou_cost = 0
+    aprox = 0
+    for i in range(M):
+        ocupacio_estacio = 0
+        for j in range(idx, max(-1, idx - ne[i]), -1):
+            ocupacio_estacio += millores[sol[j]][i]
+        n = max(0, ocupacio_estacio - ce[i])
+        nou_cost += n
+        aprox += n*(n-1)//2 
+    return nou_cost, aprox
+
+
+def min_pen_rec(
+    sol: list[int],
+    classes_restants: list[int],
+    millores: list[list[int]],
+    cost_actual: int,
+    idx: int,
+    ce: list[int],
+    ne: list[int],
+    min_cost: int,
+    inici: float,
+    aprox: int
+) -> int:
+    """Funció recursiva que retorna donada una solució parcial el mínim cost trobat fins el moment.
+    Si es troba una solució millor, s'actualitza el fitxer que apareix en la línia de comandes i 
+    s'escriu en ell el valor de la penalització total, el temps que s'ha trigat des de l'inici de 
+    l'algorisme i l'ordre de fabricació dels cotxes per aquella solcuió."""
+    C = len(sol)
+    M = len(millores[0])
+    K = len(millores)
+    if cost_actual + aprox >= min_cost:
+        return min_cost
+    if idx == C:
+        for i in range(M):
+            ocupacio_estacio = 0
+            for j in range(idx - 1, max(-1, idx - ne[i]), -1):
+                ocupacio_estacio += millores[sol[j]][i]
+                cost_actual += max(0, ocupacio_estacio - ce[i])
+        if cost_actual < min_cost:
+            min_cost = cost_actual
+            try:
+                with open(sys.argv[1], "w") as f:
+                    final = time()
+                    print(cost_actual, round(final - inici, 1), file=f)
+                    print(" ".join(map(str, sol)), file=f)
+            except IndexError:
+                print("Error. No s'ha rebut cap fitxer de sortida")
+                min_cost = -1
+                return -1
+        return min_cost
+    else:
+        for i in range(K):
+            if classes_restants[i] != 0:
+                nou_cotxe = i
+                classes_restants[i] -= 1
+                sol[idx] = nou_cotxe
+                nc, aprox = nou_cost(sol, millores, idx, ce, ne)
+                min_cost = min_pen_rec(
+                    sol,
+                    classes_restants,
+                    millores,
+                    cost_actual + nc,
+                    idx + 1,
+                    ce,
+                    ne,
+                    min_cost,
+                    inici,
+                    aprox
+                )
+                classes_restants[i] += 1
+        return min_cost
+
+
+def build_solution(
+    C: int,
+    cotxes_classe: list[int],
+    millores: list[list[int]],
+    ce: list[int],
+    ne: list[int],
+    inici: float,
+) -> int:
+    """Retorna el mínim cost de fabricació donats una matriu de millores, un vector de 
+    capacitats ce, un vector de finestres ne i els cotxes a fabricar de cada classe cotxes_classe"""
+    sol = [-1] * C
+    classes_restants = cotxes_classe.copy()
+    K = len(cotxes_classe)
+    min_cost = sys.maxsize
+    alpha = determineCandidateListPercentage()
+    for i in range(C):
+
+
+
+
+def read_input() -> tuple[int, list[int], list[list[int]], list[int], list[int]]:
+    """Llegeix l'entrada del problema i retorna:
+    C: nombre total de cotxes,
+    cotxes_classe: nombre de cotxes a fabricar de cada classe,
+    millores: matriu on cada fila correspon a una classe, i cada element m_ij indica si
+    el cotxe de la classe i necessita la millora j,
+    ce: vector de capacitats,
+    ne: vector de finestres."""
+    C = read(int)
+    M = read(int)
+    K = read(int)
+    ce = [read(int) for _ in range(M)]
+    ne = [read(int) for _ in range(M)]
+    cotxes_classe = [-1] * K
+    millores = [[-1] * M for _ in range(K)]
+    for _ in range(K):
+        i = read(int)
+        cotxes_classe[i] = read(int)
+        millores[i] = [read(int) for _ in range(M)]
+    return C, cotxes_classe, millores, ce, ne
+
+
+def main():
+    C, cotxes_classe, millores, ce, ne = read_input()
+    inici = time()
+    cost = min_pen(C, cotxes_classe, millores, ce, ne, inici)
+    final = time()
+    print(round(final - inici, 1), cost)
+
+
+main()

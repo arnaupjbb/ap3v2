@@ -1,6 +1,7 @@
 from yogi import *
 from time import time
 import sys
+import random
 
 
 def nou_cost(
@@ -62,25 +63,26 @@ def min_pen_rec(
                 return -1
         return min_cost
     else:
-        for i in range(K):
-            if classes_restants[i] != 0:
-                nou_cotxe = i
-                classes_restants[i] -= 1
-                sol[idx] = nou_cotxe
-                nc, aprox = nou_cost(sol, millores, idx, ce, ne)
-                min_cost = min_pen_rec(
-                    sol,
-                    classes_restants,
-                    millores,
-                    cost_actual + nc,
-                    idx + 1,
-                    ce,
-                    ne,
-                    min_cost,
-                    inici,
-                    aprox
-                )
-                classes_restants[i] += 1
+        classes_disponibles = [c for c in range(K) if classes_restants[c] != 0]
+        random.shuffle(classes_disponibles)    
+        for i in classes_disponibles:
+            nou_cotxe = i
+            classes_restants[i] -= 1
+            sol[idx] = nou_cotxe
+            nc, aprox = nou_cost(sol, millores, idx, ce, ne)
+            min_cost = min_pen_rec(
+                sol,
+                classes_restants,
+                millores,
+                cost_actual + nc,
+                idx + 1,
+                ce,
+                ne,
+                min_cost,
+                inici,
+                aprox
+            )
+            classes_restants[i] += 1
         return min_cost
 
 
