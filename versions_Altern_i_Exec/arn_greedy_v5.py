@@ -22,15 +22,6 @@ def add_pen(M, L, ne, mill_clas, act_sol, ce) -> tuple[int, int]:
             new_p += count - ce[m]
     return new_p, addprox
 
-def usrate(M, K, rem, used, quants, mill_clas):
-    remain_rate = [0.]*M
-    if rem == 0:
-        return remain_rate
-    for m in range(M):
-        for k in range(K):
-            remain_rate[m] += float((quants[k]-used[k])*int(mill_clas[k][m]))
-        remain_rate[m] /= rem
-    return remain_rate
 
 def is_better22(k, pos_pen, next_k, next_pen, prop_next, pens, quant, used, addprox, next_addprox, val) -> bool:
     if pos_pen + addprox != next_pen + next_addprox:
@@ -50,16 +41,28 @@ def greedy(
     act_sol = []
     act_pen = 0
     used = [0]*K
+    rem = [0]*M
+    lasts = [0]*M
+    for m in range(M):
+        for k in range(K):
+            rem[m] += (quant[k]-used[k])*int(mill_clas[k][m])
     for i in range(C):
         next_pen = C*C*M
         next_pen_add = C*C*M
-        rem = usrate(M, K, C-i, used, quant, mill_clas)
-        val = [-1.]*K
+        val = [-1]*K
         next_k = 0
         prop_next =  -1
         for k in range(K):
             if used[k] < quant[k] :
-                pos_pen, addprox = add_pen(M, i+1, ne, mill_clas, act_sol + [k], ce)
+                pos_pen, addprox = 0, 0
+                for m in range(M):
+                    mlas = lasts[m]
+                    if mill_clas[k][m]:
+                        mlas += 1
+                    if i > ne[m] and mill_clas[act_sol[i-ne[m]-1]][m]:
+                        mlas -= 1
+                    if mlas > ce[m]:
+                        pos_pen += mlas - ce[m]
                 for m in range(M):
                     if mill_clas[k][m]:
                         val[k] += rem[m]
@@ -68,7 +71,14 @@ def greedy(
                     next_pen_add = addprox
                     next_k  = k
                     prop_next = used[k] - quant[k]
+                    
         used[next_k] += 1
+        for m in range(M):
+            if mill_clas[next_k][m]:
+                rem[m] -= 1
+                lasts[m] += 1
+            if i > ne[m] and mill_clas[act_sol[-ne[m] - 1]][m]:
+                lasts[m] -= 1
         act_sol.append(next_k)
         act_pen += next_pen
     for m in range(M):

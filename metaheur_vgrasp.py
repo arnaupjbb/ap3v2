@@ -3,7 +3,7 @@ import time
 from sys import *
 import random
 import math
-
+import heapq
 
 def read_prob() -> tuple[int, int, int, list[int], list[int], list[int], list[list[bool]], list[int]]:
     """Reads the problem and returns its data"""
@@ -24,17 +24,16 @@ def read_prob() -> tuple[int, int, int, list[int], list[int], list[int], list[li
                 pens[i] += 1
     return C, M, K, ce, ne, quant, mill_clas, pens
 
-
-
 def rangreedy2(
         C: int, M: int, K:int, ce: list[int], ne: list[int], 
-        quant: list[int], mill_clas: list[list[bool]], pens:list[int], undecadax
+        quant: list[int], mill_clas: list[list[bool]], pens:list[int], alfa
         ):
     
     """Donat un problema, generem una solució més o menys propera a un òptim amb un algorisme golafre.
     Per triar entre una classe i una altra prioritza: menor penalització que afegeix a la seqüència actual, 
     major quantitat de cotxes restants, major quantitat de suma de cotxes a afegir per les seves millores (val)
     i menor nombre de millores requerides, afegim component random on"""
+    candlen = math.ceil(alfa*K)
     act_sol: list[int] = []
     act_pen: int = 0
     used: list[int] = [0]*K 
@@ -45,14 +44,8 @@ def rangreedy2(
             rem[m] += (quant[k]-used[k])*int(mill_clas[k][m])
     
     for i in range(C):
-        breakpoint = random.randint(1, K*undecadax) if undecadax != 0 else -1
-        # Si surt un nombre entre 1 i K intentarem agafar aquesta classe, sinó ho ignorarem
-
-        # Creem variables per guardar la millor penalizació fins al moment amb la seva classe, 
-        next_pen = C*C*M 
-        next_k = 0
-        # Enter que guardarà la suma de quants cotxes queden per les millores que requereix la millor classe
-        next_val = -1
+        candlist = []
+        # Creem variables per guardar la millor penalizació fins al moment amb la seva classe, s
         for k in range(K):
             if used[k] < quant[k] :
                 # Càlcul de penalitzacions i val
@@ -68,16 +61,12 @@ def rangreedy2(
                     if mlas > ce[m]:
                         pos_pen += mlas - ce[m]
                 
-                if k == breakpoint or ((pos_pen, used[k]-quant[k], -val, pens[k]) < 
-                        (next_pen, used[next_k]-quant[next_k], -next_val, pens[next_k])):
-                    # Triem entre la classe a explorar i la millor trobada i actualitzem
-                    next_pen = pos_pen
-                    next_k  = k
-                    next_val = val
-                if k == breakpoint:
-                    # Si la k és la que hem decidit amb randint, parem de buscar i l'afegim a la llista
-                    break
+                heapq.heappush(candlist, (-pos_pen, -(used[k]-quant[k]), val, -pens[k], k))
+                if len(candlist) > candlen:
+                    heapq.heappop(candlist)
         # Actualitzem valors
+        next_el = random.choice(candlist)
+        next_k = next_el[-1]
         used[next_k] += 1
         for m in range(M):
             if mill_clas[next_k][m]:
@@ -86,7 +75,7 @@ def rangreedy2(
             if i >= ne[m] and mill_clas[act_sol[-ne[m]]][m]:
                 lasts[m] -= 1
         act_sol.append(next_k)
-        act_pen += next_pen
+        act_pen += -next_el[0]
 
     # Afegim penalització final   
     for m in range(M):
@@ -98,8 +87,6 @@ def rangreedy2(
                 act_pen += count - ce[m]
 
     return act_pen, act_sol
-            
-
 
 def calc_pen(solution: list[int], ce: list[int], ne: list[int], mill_clas: list[list[bool]]) -> int:
     """Donada una solució i les dades necessàries del problema (les capacitats de classes i les
@@ -127,11 +114,11 @@ def metaheur(C, M, K, ce, ne, quant, mill_clas, pens, arch, start):
 
     # Paràmetres de randomització pel simulated annealing (TVAL, ALFAVAL), per quan triguem
     # en resetejar i per la randomització del greedy
-    TVAL = 1.
-    ALFAVAL = 0.1
-    RESTART_CRIT = 500
-    RANDOMPROB = K//4 + 1
-    best_pen, best_sol = rangreedy2(C, M, K, ce, ne, quant, mill_clas, pens, 0)
+    TVAL = 1. #temperatura de sim anneal
+    ALFAVAL = 0.1   #alfa de sim anneal
+    RESTART_CRIT = C*C//2   #criteri de fi de sim anneal
+    ALFAGRASP = 0.4  #proporció que agafes de candidats
+    best_pen, best_sol = rangreedy2(C, M, K, ce, ne, quant, mill_clas, pens, ALFAGRASP)
     with open(arch,"w") as f: 
         endi = time.time()
         print(best_pen, round(endi - start,1), file=f)
@@ -147,9 +134,8 @@ def metaheur(C, M, K, ce, ne, quant, mill_clas, pens, arch, start):
         new_sol[pos1], new_sol[pos2] = new_sol[pos2], new_sol[pos1]
         new_pen = calc_pen(new_sol, ce, ne, mill_clas)
         if iter > RESTART_CRIT:
-            # Calulate randomized greedy again
             T = TVAL
-            new_pen, new_sol = rangreedy2(C, M, K, ce, ne, quant, mill_clas, pens, RANDOMPROB)
+            new_pen, new_sol = rangreedy2(C, M, K, ce, ne, quant, mill_clas, pens, ALFAGRASP)
             iter = 0
         if new_pen <= best_pen or (random.uniform(0,1) < math.e**(-(new_pen - best_pen)/(T))):
             best_sol = new_sol[:]

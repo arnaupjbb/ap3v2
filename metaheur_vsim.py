@@ -147,7 +147,7 @@ def metaheur(C, M, K, ce, ne, quant, mill_clas, pens, arch, start):
         new_sol[pos1], new_sol[pos2] = new_sol[pos2], new_sol[pos1]
         new_pen = calc_pen(new_sol, ce, ne, mill_clas)
         if iter > RESTART_CRIT:
-            # Calulate randomized greedy again
+            # Calulate randomized greedy again sense això és sim anneal
             T = TVAL
             new_pen, new_sol = rangreedy2(C, M, K, ce, ne, quant, mill_clas, pens, RANDOMPROB)
             iter = 0
