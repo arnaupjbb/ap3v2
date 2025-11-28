@@ -146,18 +146,18 @@ def metaheur(C, M, K, ce, ne, quant, mill_clas, pens, arch, start):
         new_sol = best_sol.copy()
         new_sol[pos1], new_sol[pos2] = new_sol[pos2], new_sol[pos1]
         new_pen = calc_pen(new_sol, ce, ne, mill_clas)
-        if iter > RESTART_CRIT:
+        """if iter > RESTART_CRIT:
             # Calulate randomized greedy again sense això és sim anneal
             T = TVAL
             new_pen, new_sol = rangreedy2(C, M, K, ce, ne, quant, mill_clas, pens, RANDOMPROB)
-            iter = 0
+            iter = 0 """
         if new_pen <= best_pen or (random.uniform(0,1) < math.e**(-(new_pen - best_pen)/(T))):
             best_sol = new_sol[:]
             best_pen = new_pen
             if new_pen < real_best_pen:
                 real_best_pen = new_pen
                 real_best_sol = new_sol[:]
-                iter = 0
+                # iter = 0
                 with open(arch,"w") as f: 
                     endi = time.time()
                     print(real_best_pen, round(endi - start,1), file=f)
