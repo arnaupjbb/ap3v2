@@ -1,7 +1,11 @@
 from yogi import *
 from time import time
 import sys
+import random
 
+E = 2.718281828459 
+INITIAL_T = 1.0
+BETA = 0.99
 
 def nou_cost(
     sol: list[int], millores: list[list[int]], idx: int, ce: list[int], ne: list[int]
@@ -21,67 +25,21 @@ def nou_cost(
         aprox += n*(n-1)//2 
     return nou_cost, aprox
 
-
-def min_pen_rec(
-    sol: list[int],
-    classes_restants: list[int],
-    millores: list[list[int]],
-    cost_actual: int,
-    idx: int,
-    ce: list[int],
-    ne: list[int],
-    min_cost: int,
-    inici: float,
-    aprox: int
-) -> int:
-    """Funció recursiva que retorna donada una solució parcial el mínim cost trobat fins el moment.
-    Si es troba una solució millor, s'actualitza el fitxer que apareix en la línia de comandes i 
-    s'escriu en ell el valor de la penalització total, el temps que s'ha trigat des de l'inici de 
-    l'algorisme i l'ordre de fabricació dels cotxes per aquella solcuió."""
+def sol_cost(sol: list[int], millores: list[list[int]], ce:list[int], ne:list[int]):
+    M = len(ce)
     C = len(sol)
-    M = len(millores[0])
-    K = len(millores)
-    if cost_actual + aprox >= min_cost:
-        return min_cost
-    if idx == C:
-        for i in range(M):
-            ocupacio_estacio = 0
-            for j in range(idx - 1, max(-1, idx - ne[i]), -1):
-                ocupacio_estacio += millores[sol[j]][i]
-                cost_actual += max(0, ocupacio_estacio - ce[i])
-        if cost_actual < min_cost:
-            min_cost = cost_actual
-            try:
-                with open(sys.argv[1], "w") as f:
-                    final = time()
-                    print(cost_actual, round(final - inici, 1), file=f)
-                    print(" ".join(map(str, sol)), file=f)
-            except IndexError:
-                print("Error. No s'ha rebut cap fitxer de sortida")
-                min_cost = -1
-                return -1
-        return min_cost
-    else:
-        for i in range(K):
-            if classes_restants[i] != 0:
-                nou_cotxe = i
-                classes_restants[i] -= 1
-                sol[idx] = nou_cotxe
-                nc, aprox = nou_cost(sol, millores, idx, ce, ne)
-                min_cost = min_pen_rec(
-                    sol,
-                    classes_restants,
-                    millores,
-                    cost_actual + nc,
-                    idx + 1,
-                    ce,
-                    ne,
-                    min_cost,
-                    inici,
-                    aprox
-                )
-                classes_restants[i] += 1
-        return min_cost
+    cost = 0
+    for m in range(M):
+        ocupacio_estacio = 0
+        window_length = ne[m]
+        for i in range(C+window_length-1):
+            if i < C:
+                ocupacio_estacio += millores[sol[i]][m]
+            window_idx = i - window_length + 1
+            if window_idx > 0:
+                ocupacio_estacio -= millores[sol[window_idx-1]][m]
+            cost += max(ocupacio_estacio - ce[m], 0)
+    return cost
 
 
 def build_solution(
@@ -90,16 +48,61 @@ def build_solution(
     millores: list[list[int]],
     ce: list[int],
     ne: list[int],
-    inici: float,
-) -> int:
+    alpha: float
+    ) -> list[int]:
     """Retorna el mínim cost de fabricació donats una matriu de millores, un vector de 
     capacitats ce, un vector de finestres ne i els cotxes a fabricar de cada classe cotxes_classe"""
     sol = [-1] * C
     classes_restants = cotxes_classe.copy()
     K = len(cotxes_classe)
     min_cost = sys.maxsize
-    alpha = determineCandidateListPercentage()
     for i in range(C):
+        class_scores = []
+        classes = [i for i in range(K)]
+        random.shuffle(classes)
+        for k in classes:
+            if classes_restants[k] != 0:
+                sol[i] = k
+                cost, aprox = nou_cost(sol, millores, i, ce, ne)
+                class_scores.append((cost+aprox, classes_restants[k], k))
+        L = int(max(alpha*len(class_scores), 1))
+        class_scores = sorted(class_scores, key=lambda x: (x[0], -x[1]))[:L]
+        candidate = class_scores[random.randint(0, L-1)][2]
+        sol[i] = candidate
+        classes_restants[candidate] -= 1
+    return sol
+
+def grasp(C: int, cotxes_classe: list[int], millores: list[list[int]], ce: list[int], ne: list[int], min_cost:int, inici:float, alpha: float) -> int:
+    sol = build_solution(C, cotxes_classe, millores, ce, ne, alpha)
+    T = INITIAL_T
+    k = 0
+    cost = sol_cost(sol, millores, ce, ne)
+    while k < 500:
+        n1 = random.randint(0, C-1)
+        n2 = random.randint(0, C-1)
+        while n1 == n2:
+            n2 = random.randint(0, C-1)
+        neighbour_sol = sol.copy()
+        neighbour_sol[n1], neighbour_sol[n2] = neighbour_sol[n2], neighbour_sol[n1]
+        n_cost = sol_cost(neighbour_sol, millores, ce, ne)
+        if n_cost < cost:
+            sol = neighbour_sol
+            cost = n_cost
+            if cost < min_cost:
+                min_cost = cost
+                with open(sys.argv[1], "w") as f:
+                    final = time()
+                    print(min_cost, round(final - inici, 1), file=f)
+                    print(" ".join(map(str, sol)), file=f)
+        else:
+            prob = E**(-(n_cost-cost)/T)
+            R = random.random()
+            if R < prob: 
+                sol = neighbour_sol
+                cost = n_cost  
+        T = BETA * T
+        k += 1
+    return min_cost
 
 
 
@@ -127,11 +130,19 @@ def read_input() -> tuple[int, list[int], list[list[int]], list[int], list[int]]
 
 
 def main():
+    min_cost = sys.maxsize
     C, cotxes_classe, millores, ce, ne = read_input()
     inici = time()
-    cost = min_pen(C, cotxes_classe, millores, ce, ne, inici)
-    final = time()
-    print(round(final - inici, 1), cost)
-
+    k = 0
+    alpha = 0.3
+    while True:
+        new_min_cost = grasp(C, cotxes_classe, millores, ce, ne, min_cost, inici, alpha)
+        k += 1
+        if new_min_cost != min_cost:
+            k = 0
+            min_cost = new_min_cost
+        if k >= 1000:
+            if alpha < 0.98:
+                alpha += 0.02
 
 main()

@@ -1,11 +1,10 @@
 from yogi import *
 from time import time
 import sys
-import random
 
 
 def nou_cost(
-    sol: list[int], millores: list[list[int]], idx: int, ce: list[int], ne: list[int]
+    sol: list[int], millores: list[list[int]], idx: int, ce: list[int], ne: list[int], best_cost:int, cost:int
 )-> tuple[int, int]:
     """Retorna la suma dels costos de cada estació per a l'interval [max(idx-ne[i], 0), idx] per cada i. 
     També retorna una cota inferior de la penalització futura a partir de la solució fins a idx."""
@@ -13,14 +12,24 @@ def nou_cost(
     C = len(sol)
     nou_cost = 0
     aprox = 0
-    for i in range(M):
-        ocupacio_estacio = 0
-        for j in range(idx, max(-1, idx - ne[i]), -1):
-            ocupacio_estacio += millores[sol[j]][i]
-        n = max(0, ocupacio_estacio - ce[i])
-        nou_cost += n
-        aprox += n*(n-1)//2 
-    return nou_cost, aprox
+    if idx == len(sol) -1:
+        for i in range(M):
+            ocupacio_estacio = 0
+            for j in range(idx, max(-1, idx - ne[i]), -1):
+                ocupacio_estacio += millores[sol[j]][i]
+                nou_cost += max(0, ocupacio_estacio - ce[i])
+                if cost+nou_cost >= best_cost:
+                    return best_cost + 1, 0
+        return nou_cost, 0
+    else:
+        for i in range(M):
+            ocupacio_estacio = 0
+            for j in range(idx, max(-1, idx - ne[i]), -1):
+                ocupacio_estacio += millores[sol[j]][i]
+            n = max(0, ocupacio_estacio - ce[i])
+            nou_cost += n
+            aprox += n*(n-1)//2 
+        return nou_cost, aprox
 
 
 def min_pen_rec(
@@ -45,11 +54,6 @@ def min_pen_rec(
     if cost_actual + aprox >= min_cost:
         return min_cost
     if idx == C:
-        for i in range(M):
-            ocupacio_estacio = 0
-            for j in range(idx - 1, max(-1, idx - ne[i]), -1):
-                ocupacio_estacio += millores[sol[j]][i]
-                cost_actual += max(0, ocupacio_estacio - ce[i])
         if cost_actual < min_cost:
             min_cost = cost_actual
             try:
@@ -63,26 +67,25 @@ def min_pen_rec(
                 return -1
         return min_cost
     else:
-        classes_disponibles = [c for c in range(K) if classes_restants[c] != 0]
-        random.shuffle(classes_disponibles)    
-        for i in classes_disponibles:
-            nou_cotxe = i
-            classes_restants[i] -= 1
-            sol[idx] = nou_cotxe
-            nc, aprox = nou_cost(sol, millores, idx, ce, ne)
-            min_cost = min_pen_rec(
-                sol,
-                classes_restants,
-                millores,
-                cost_actual + nc,
-                idx + 1,
-                ce,
-                ne,
-                min_cost,
-                inici,
-                aprox
-            )
-            classes_restants[i] += 1
+        for i in range(K):
+            if classes_restants[i] != 0:
+                nou_cotxe = i
+                classes_restants[i] -= 1
+                sol[idx] = nou_cotxe
+                nc, aprox = nou_cost(sol, millores, idx, ce, ne, min_cost, cost_actual)
+                min_cost = min_pen_rec(
+                    sol,
+                    classes_restants,
+                    millores,
+                    cost_actual + nc,
+                    idx + 1,
+                    ce,
+                    ne,
+                    min_cost,
+                    inici,
+                    aprox
+                )
+                classes_restants[i] += 1
         return min_cost
 
 
