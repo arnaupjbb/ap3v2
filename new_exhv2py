@@ -11,7 +11,7 @@ def lowbound(ce, ne, mill_clas, quant, used, idx, C, remaining, sol):
     M, K = len(ne), len(quant)
     for m in range(M):
         nwin = (C-idx)//ne[m]
-        cap = ce[m]*nwin + ce[m]
+        cap = ce[m]*nwin +ce[m]
         if remaining[m] > cap: min_pen += ne[m]*(remaining[m] - cap)
     return min_pen
 
@@ -101,6 +101,63 @@ def main():
         for k in range(K):
             if mill_clas[k][m]:
                 remaining[m] += quant[k]
+
+
+    
+    def find_best_sol_rec(used: list[int], sol: list[int],
+                    act_pen: int, best_cost: int, idx: int, lasts: list[int], addprox, remaining) -> int :
+    
+
+        if act_pen + addprox + lowbound(ce, ne, mill_clas, quant, used, idx, C, remaining, sol) >= best_cost : return best_cost
+
+        if idx == C :
+            for m in range(M):
+                count = 0
+                for i in range(C-1, max(C - ne[m], -1), -1):
+                    if mill_clas[sol[i]][m]:
+                        count += 1
+                    if count > ce[m]:
+                        act_pen += count - ce[m]
+                    if act_pen >= best_cost: return best_cost
+                    
+                    
+            if act_pen < best_cost:
+                best_cost = act_pen
+                with open(argv[1],"w") as f: 
+                    endi = time.time()
+                    print(best_cost, round(endi - start,1), file=f)
+                    print(' '.join(map(str, sol)), file=f)
+            return best_cost
+        else :
+            for k in range(K) :
+                if used[k] < quant[k]:
+                    addprox = 0
+                    sol[idx] = k
+                    used[k] += 1
+                    pen = 0
+                    for m in range(M):
+                        if mill_clas[k][m]: 
+                            lasts[m] += 1
+                            remaining[m] -= 1
+                        if idx >= ne[m] and mill_clas[sol[idx - ne[m]]][m]: lasts[m] -= 1
+                        if lasts[m] > ce[m]:
+                            pen += lasts[m] - ce[m]
+                            addprox += (lasts[m] - ce[m])*(lasts[m] - ce[m]-1)//2
+                    
+                    best_cost = find_best_sol_rec(used, sol, act_pen + pen,best_cost, idx + 1, lasts, addprox, remaining) 
+                    
+                    for m in range(M):
+                        if mill_clas[k][m]: 
+                            lasts[m] -= 1
+                            remaining[m] += 1
+                        if idx >= ne[m] and mill_clas[sol[idx - ne[m]]][m]: lasts[m] += 1
+                    used[k] -= 1
+            return best_cost
+
+
+
+
+                
     cost = find_best_sol_rec(ce, ne, quant, mill_clas, used, sol, act_pen, best_cost, idx, lasts, 0, remaining)
     print(time.time()-start)
     

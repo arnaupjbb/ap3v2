@@ -5,6 +5,8 @@ import random
 import math
 import heapq
 
+
+
 def read_prob() -> tuple[int, int, int, list[int], list[int], list[int], list[list[bool]], list[int]]:
     """Reads the problem and returns its data"""
     C, M, K = read(int), read(int), read(int)
@@ -36,6 +38,7 @@ def rangreedy2(
     candlen = math.ceil(alfa*K)
     act_sol: list[int] = []
     act_pen: int = 0
+    
     used: list[int] = [0]*K 
     rem: list[int] = [0]*M  # Guarda quants otxes queden per la millora m
     lasts: list[int] = [0]*M # Guarda quants cotxes amb la millora m tenim per l'última finestra de llargada ne[m]
@@ -115,9 +118,11 @@ def metaheur(C, M, K, ce, ne, quant, mill_clas, pens, arch, start):
     # Paràmetres de randomització pel simulated annealing (TVAL, ALFAVAL), per quan triguem
     # en resetejar i per la randomització del greedy
     TVAL = 1. #temperatura de sim anneal
-    ALFAVAL = 0.1   #alfa de sim anneal
+    ALFAVAL = 0.4   #alfa de sim anneal
     RESTART_CRIT = C*C//2   #criteri de fi de sim anneal
-    ALFAGRASP = 0.4  #proporció que agafes de candidats
+    ALFAGRASP = 0.1  #proporció que agafes de candidats
+    random.seed(10)
+
     best_pen, best_sol = rangreedy2(C, M, K, ce, ne, quant, mill_clas, pens, ALFAGRASP)
     with open(arch,"w") as f: 
         endi = time.time()
@@ -135,6 +140,7 @@ def metaheur(C, M, K, ce, ne, quant, mill_clas, pens, arch, start):
         new_pen = calc_pen(new_sol, ce, ne, mill_clas)
         if iter > RESTART_CRIT:
             T = TVAL
+            ALFAGRASP = (9*ALFAGRASP + 0.5)/10 
             new_pen, new_sol = rangreedy2(C, M, K, ce, ne, quant, mill_clas, pens, ALFAGRASP)
             iter = 0
         if new_pen <= best_pen or (random.uniform(0,1) < math.e**(-(new_pen - best_pen)/(T))):

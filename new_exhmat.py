@@ -5,9 +5,8 @@ import time
 
 start = time.time() 
 
-def find_best_sol_rec(ce, ne, quant, mill_clas, used, sol, dislike, best_cost, idx, lasts2) -> int :
+def find_best_sol_rec(ce, ne, quant, mill_clas, used, sol, dislike, best_cost, idx, lasts2, addp) -> int :
     C, M, K = len(sol), len(mill_clas[0]), len(used)
-    addp = 0
     
     if dislike +addp >= best_cost : return best_cost
 
@@ -29,6 +28,7 @@ def find_best_sol_rec(ce, ne, quant, mill_clas, used, sol, dislike, best_cost, i
         for k in range(K) :
             if used[k] < quant[k]:
                 sol[idx] = k
+                addp = 0
                 used[k] += 1
                 pen = 0
                 for m in range(M):
@@ -39,8 +39,9 @@ def find_best_sol_rec(ce, ne, quant, mill_clas, used, sol, dislike, best_cost, i
                         mp -= lasts2[m][idx - ne[m]]
                     if mp > ce[m]:
                         pen += mp - ce[m]
+                        addp += (mp - ce[m])*(mp-ce[m]-1)//2
                 
-                best_cost = find_best_sol_rec(ce, ne, quant, mill_clas, used, sol, dislike + pen,best_cost, idx + 1, lasts2)
+                best_cost = find_best_sol_rec(ce, ne, quant, mill_clas, used, sol, dislike + pen,best_cost, idx + 1, lasts2, addp)
                 used[k] -= 1
         return best_cost
 
@@ -69,8 +70,8 @@ def main():
     used = [0]*K
     best_cost = C*C*M
     lasts2 = [[0 for _ in range(C)] for _ in range(M)] #Cada fila es una millora, cada columna l'index
-    cost = find_best_sol_rec(ce, ne, quant, mill_clas, used, sol, dislike, best_cost, idx, lasts2)
-
+    cost = find_best_sol_rec(ce, ne, quant, mill_clas, used, sol, dislike, best_cost, idx, lasts2, 0)
+    print(time.time()-start)
 
     
 main()

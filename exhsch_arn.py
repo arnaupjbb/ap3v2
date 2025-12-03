@@ -24,6 +24,19 @@ def add_pen(M, L, ne, mill_clas, act_sol, ce) -> tuple[int, int]:
             app += addin*(addin - 1)//2
     return new_p, app
 
+def lowbound(ce, ne, mill_clas, quant, used, idx, C: int):
+    min_pen = 0
+    M, K = len(ne), len(quant)
+    for m in range(M):
+        remaining = 0
+        for k in range(K):
+            if mill_clas[k][m]:
+                remaining += quant[k] - used[k]
+        nwin = (C-idx)//ne[m]
+        cap = ce[m]*nwin +ce[m]
+        if remaining > cap: min_pen += ne[m]*(remaining - cap)
+    return min_pen
+
 
 def exh_sch(
         C: int, M: int, K:int, ce: list[int], ne: list[int], 
@@ -36,7 +49,7 @@ def exh_sch(
     and modifies the list best_sol giving the solution with the best solution found, it writes
     the best solution found in the given output file when found, next to its penalty and time spent 
     to found it"""
-    if act_pen + addprox >= best_pen:
+    if act_pen + addprox +lowbound(ce, ne, mill_clas, quant, used, len(act_sol), C)>= best_pen:
         return best_pen
     L: int = len(act_sol)
 
