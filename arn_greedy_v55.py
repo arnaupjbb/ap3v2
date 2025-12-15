@@ -1,0 +1,123 @@
+from yogi import *
+import time
+from sys import *
+
+def add_pen(M, L, ne, mill_clas, act_sol, ce) -> tuple[int, int]:
+    """ Given some information of the problem (M, L, ne, mill_clas, ce) and the partial solution, 
+    it returns the penalty caused by the last addition . It can be used for the starting
+    intervals too (even if they are shorter than the ne), but does not return the penalty 
+    to add for the last shorter intervals"""
+    L = len(act_sol)
+    new_p = 0
+    app = 0
+    for m in range(M):
+        count = 0
+        for i in range(max(L - ne[m], 0), L):
+            if mill_clas[act_sol[i]][m]:
+                count += 1
+        if count > ce[m]:
+            addin = count - ce[m]
+            new_p += addin
+            app += addin*(addin - 1)//2
+    return new_p, app
+
+
+def greedy(
+        C: int, M: int, K:int, ce: list[int], ne: list[int], 
+        quant: list[int], mill_clas: list[list[bool]], pens:list[int]
+        ):
+    
+    """Donat un problema, generem una solució més o menys propera a un òptim amb un algorisme golafre.
+    Per triar entre una classe i una altra prioritza: menor penalització que afegeix a la seqüència actual, 
+    major quantitat de cotxes restants, major quantitat de suma de cotxes a afegir per les seves millores (val)
+    i menor nombre de millores requerides"""
+    act_sol: list[int] = []
+    act_pen: int = 0
+    used: list[int] = [0]*K   # Guarda quants cotxes amb la millora m tenim per l'última finestra de llargada ne[m]
+
+    for i in range(C):
+
+        # Creem variables per guardar la millor penalizació fins al moment amb la seva classe, 
+        next_pen = C*C*M 
+        next_k = 0
+
+        rev = False
+        for k in range(K):
+            if used[k] < quant[k] :
+                # Càlcul de penalitzacions i val
+                pos_pen = 0
+                pos_pen, _ = add_pen(M, len(act_sol), ne, mill_clas, act_sol + [k], ce)
+                if ((pos_pen, used[k]-quant[k], pens[k]) < 
+                        (next_pen, used[next_k]-quant[next_k], pens[next_k])):
+                    # Triem entre la classe a explorar i la millor trobada i actualitzem
+                    next_pen = pos_pen
+                    next_k  = k
+        revsol = act_sol[:]
+        revsol.reverse()
+        for k in range(K):
+            if used[k] < quant[k] :
+                # Càlcul de penalitzacions i val
+                
+                pos_pen, _ = add_pen(M, len(act_sol)+1, ne, mill_clas, revsol + [k], ce)
+                
+                if ((pos_pen, used[k]-quant[k], pens[k]) < 
+                        (next_pen, used[next_k]-quant[next_k], pens[next_k])):
+                    # Triem entre la classe a explorar i la millor trobada i actualitzem
+                    next_pen = pos_pen
+                    next_k  = k
+                    rev = True
+#falta millorar lasts      
+        # Actualitzem valors
+        if rev:
+            act_sol.reverse()
+        used[next_k] += 1
+        act_sol.append(next_k)
+        act_pen += next_pen
+
+    # Afegim penalització final   
+    for m in range(M):
+        count = 0
+        for i in range(C-1, max(C - ne[m], -1), -1):
+            if mill_clas[act_sol[i]][m]:
+                count += 1
+            if count > ce[m]:
+                act_pen += count - ce[m]
+
+    return act_pen, act_sol
+            
+
+def read_prob() -> tuple[int, int, int, list[int], list[int], list[int], list[list[bool]], list[int]]:
+    """Reads the problem and returns its data"""
+    C, M, K = read(int), read(int), read(int)
+    ce = [read(int) for _ in range(M)]  # quantitat que podem fer
+    ne = [read(int) for _ in range(M)]  # per cada ne cotxes
+    pens = [0]*K
+    quant = []                          # cotxes de cada classe
+    mill_clas = [[] for _ in range(K)]  # la classe i requereix la millora j?
+
+    for i in range(K):
+        read(int)
+        quant.append(read(int))
+        for j in range(M):
+            have = bool(read(int))
+            mill_clas[i].append(have)
+            if have:
+                pens[i] += 1
+    return C, M, K, ce, ne, quant, mill_clas, pens
+
+
+
+def main():
+    start = time.time()
+    C, M, K, ce, ne, quant, mill_clas, pens = read_prob()
+    arch = argv[1]
+    best_pen, best_sol = greedy(
+        C, M, K, ce, ne, quant, mill_clas, pens
+        )
+    with open(arch,"a") as f: 
+        endi = time.time()
+        print(best_pen, round(endi - start,1), file=f)
+        print(' '.join(map(str, best_sol)), file=f)
+
+if __name__ == "__main__":
+    main()

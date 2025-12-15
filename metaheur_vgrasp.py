@@ -132,7 +132,9 @@ def metaheur(C, M, K, ce, ne, quant, mill_clas, pens, arch, start):
     alfa = ALFAVAL
     T = TVAL
     real_best_sol, real_best_pen = best_sol, best_pen
-    while True:
+    s= 0
+    while s < 15000 and real_best_pen != 0:
+        s += 1
         pos1 = random.randint(0, C-1)
         pos2 = random.randint(0, C-1)
         new_sol = best_sol.copy()

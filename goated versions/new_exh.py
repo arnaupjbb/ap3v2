@@ -6,13 +6,12 @@ import time
 start = time.time()
 
 def lowbound(ce, ne, mill_clas, quant, used, idx, C, remaining, sol):
-    st = time.time()
     min_pen = 0
-    M, K = len(ne), len(quant)
+    M = len(ne)
+    c2add = C - idx
     for m in range(M):
-        nwin = (C-idx)//ne[m]
-        cap = ce[m]*nwin + ce[m]
-        if remaining[m] > cap: min_pen += ne[m]*(remaining[m] - cap)
+       if c2add > ce[m]:
+           min_pen += max(0, remaining[m] * ne[m] - ce[m] * (c2add + ne[m] - ce[m]))
     return min_pen
 
 
@@ -66,8 +65,6 @@ def find_best_sol_rec(ce: list[int], ne: list[int], quant: list[int],
                     if idx >= ne[m] and mill_clas[sol[idx - ne[m]]][m]: lasts[m] += 1
                 used[k] -= 1
         return best_cost
-
-
 
 
 
