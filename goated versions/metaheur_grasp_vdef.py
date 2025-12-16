@@ -119,7 +119,7 @@ def metaheur(C, M, K, ce, ne, quant, mill_clas, pens, arch, start):
     # en resetejar i per la randomització del greedy
     TVAL = 1. #temperatura de sim anneal
     ALFAVAL = 0.95   #alfa de sim anneal
-    RESTART_CRIT = min(C*C//2, 5000)   #criteri de fi de sim anneal
+    RESTART_CRIT = C*C//2   #criteri de fi de sim anneal
     ALFAGRASP = 0.1  #proporció que agafes de candidats
     random.seed(1001)
 
@@ -134,7 +134,6 @@ def metaheur(C, M, K, ce, ne, quant, mill_clas, pens, arch, start):
     real_best_sol, real_best_pen = best_sol, best_pen
 
     while True:
-
         pos1 = random.randint(0, C-1)
         pos2 = random.randint(0, C-1)
         new_sol = best_sol.copy()
