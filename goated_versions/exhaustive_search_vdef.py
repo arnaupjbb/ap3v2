@@ -108,7 +108,6 @@ def main():
             if mill_clas[k][m]:
                 remaining[m] += quant[k]
 
-    cost = find_best_sol_rec(ce, ne, mill_clas, quant, sol, used, lasts, remaining,0, C*C*M, 0, 0, start)
-    print(time.time()-start)
+    _ = find_best_sol_rec(ce, ne, mill_clas, quant, sol, used, lasts, remaining,0, C*C*M, 0, 0, start)
     
 main()

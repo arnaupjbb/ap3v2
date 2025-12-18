@@ -44,7 +44,6 @@ def greedy(
         next_k = 0
         # Enter que guardarà la suma de quants cotxes queden per les millores que requereix la millor classe
         next_val = -1
-        nextb = C*C*M
         for k in range(K):
             if used[k] < quant[k] :
                 # Càlcul de penalitzacions i val
@@ -55,18 +54,18 @@ def greedy(
                     if mill_clas[k][m]:
                         mlas += 1
                         val += rem[m]
+                        
                     if i >= ne[m] and mill_clas[act_sol[i-ne[m]]][m]:
                         mlas -= 1
                     if mlas > ce[m]:
                         pos_pen += mlas - ce[m]
-                bou = lowbound(ce, ne, C-i, rem)
-                if ((pos_pen, bou, used[k]-quant[k], -val, pens[k]) < 
-                        (next_pen, nextb, used[next_k]-quant[next_k], -next_val, pens[next_k])):
+                if ((pos_pen, used[k]-quant[k], -val, pens[k]) < 
+                        (next_pen, used[next_k]-quant[next_k], -next_val, pens[next_k])):
                     # Triem entre la classe a explorar i la millor trobada i actualitzem
                     next_pen = pos_pen
                     next_k  = k
                     next_val = val
-                    nextb = bou
+
         # Actualitzem valors
         used[next_k] += 1
         for m in range(M):
@@ -114,12 +113,11 @@ def read_prob() -> tuple[int, int, int, list[int], list[int], list[int], list[li
 def main():
     start = time.time()
     C, M, K, ce, ne, quant, mill_clas, pens = read_prob()
-    arch = argv[1]
     
     best_pen, best_sol = greedy(
         C, M, K, ce, ne, quant, mill_clas, pens
         )
-    with open(arch,"a") as f: 
+    with open(argv[1],"w") as f: 
         endi = time.time()
         print(best_pen, round(endi - start,1), file=f)
         print(' '.join(map(str, best_sol)), file=f)

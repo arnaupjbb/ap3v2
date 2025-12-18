@@ -20,6 +20,7 @@ def lowbound(ce: list[int], ne: list[int], c2add: int, remaining: list[int]):
            min_pen += max(0, remaining[m] * ne[m] - ce[m] * (c2add + ne[m] - ce[m]))
     return min_pen
 
+
 def read_prob() -> tuple[int, int, int, list[int], list[int], list[int], list[list[bool]], list[int]]:
     """Reads the problem and returns its data"""
     C, M, K = read(int), read(int), read(int)
@@ -38,6 +39,7 @@ def read_prob() -> tuple[int, int, int, list[int], list[int], list[int], list[li
             if have:
                 pens[i] += 1
     return C, M, K, ce, ne, quant, mill_clas, pens
+
 
 def rangreedy2(
         C: int, M: int, K:int, ce: list[int], ne: list[int], 
@@ -104,11 +106,12 @@ def rangreedy2(
 
     return act_pen, act_sol
 
+
 def calc_pen2(solution: list[int], ce: list[int], ne: list[int], 
               mill_clas: list[list[bool]], last_pen: int, pos1: int, pos2: int) -> int:
-    """Donada una solució, dades del problema, i les 2 últimes posicions canviades, 
+    """Donada una solució amb 2 posicions canviades, dades del problema, i les posicions canviades, 
     calcula penalització de la nova solució"""
-    C, M, K = len(solution), len(mill_clas[0]), len(mill_clas)
+    C, M = len(solution), len(mill_clas[0])
     if pos1 == pos2: return last_pen
     for m in range(M):
         if mill_clas[solution[pos1]][m] != mill_clas[solution[pos2]][m]:
@@ -142,7 +145,7 @@ def calc_pen2(solution: list[int], ce: list[int], ne: list[int],
     return last_pen
 
 
-def metaheur(C, M, K, ce, ne, quant, mill_clas, pens, arch, start):
+def metaheur(C, M, K, ce, ne, quant, mill_clas, pens, start):
     """Resolem el problema dels cotxes amb una heurística GRASP utilitzant simulated annealing"""
 
     # Paràmetres de randomització pel simulated annealing (TVAL, ALFAVAL), per quan triguem
@@ -153,6 +156,7 @@ def metaheur(C, M, K, ce, ne, quant, mill_clas, pens, arch, start):
                         #igual que la millor solució trobada)
     ALFAGRASP = 0.1  #proporció que agafes de candidats al greedy
     EQLIM = C*C*5  # Límit per iteracions on la solució te penalització
+    MAXALFAGRASP = 0.4 # Alfa a la que convergirem
     SEED = 1213
     random.seed(SEED)
 
@@ -164,7 +168,7 @@ def metaheur(C, M, K, ce, ne, quant, mill_clas, pens, arch, start):
     MINIMUM_POSSIBLE_PEN = lowbound(ce, ne, C, remaining)
 
     best_pen, best_sol = rangreedy2(C, M, K, ce, ne, quant, mill_clas, pens, ALFAGRASP)
-    with open(arch,"w") as f: 
+    with open(argv[1],"w") as f: 
         endi = time.time()
         print(best_pen, round(endi - start,1), file=f)
         print(' '.join(map(str, best_sol)), file=f)
@@ -179,14 +183,14 @@ def metaheur(C, M, K, ce, ne, quant, mill_clas, pens, arch, start):
         if iter > RESTART_CRIT or eqcas > EQLIM:
             RESTART_CRIT = min(C*C*C, RESTART_CRIT + C*C//10)
             T = TVAL
-            ALFAGRASP = (9*ALFAGRASP + 0.4)/10
+            ALFAGRASP = (9*ALFAGRASP + MAXALFAGRASP)/10
             best_pen, best_sol = rangreedy2(C, M, K, ce, ne, quant, mill_clas, pens, ALFAGRASP)
             iter = 0
             eqcas = 0
             if best_pen < real_best_pen:
                 real_best_pen = best_pen
                 real_best_sol = best_sol[:]
-                with open(arch,"w") as f: 
+                with open(argv[1],"w") as f: 
                     endi = time.time()
                     print(real_best_pen, round(endi - start,1), file=f)
                     print(' '.join(map(str, real_best_sol)), file=f)
@@ -208,15 +212,15 @@ def metaheur(C, M, K, ce, ne, quant, mill_clas, pens, arch, start):
                     iter = 0
                     eqcas = 0
                     
-                    with open(arch,"w") as f: 
+                    with open(argv[1],"w") as f: 
                         endi = time.time()
                         print(real_best_pen, round(endi - start,1), file=f)
                         print(' '.join(map(str, real_best_sol)), file=f)
             else:
+                # Si no hem quedat amb al nova solució, tornem a la posició anterior
                 best_sol[pos1], best_sol[pos2] = best_sol[pos2], best_sol[pos1]
             
-
-
+        # Preparem següent iteració
         last_pen = best_pen
         iter += 1
         T *= alfa
@@ -225,7 +229,6 @@ def metaheur(C, M, K, ce, ne, quant, mill_clas, pens, arch, start):
 def main():
     start = time.time()
     C, M, K, ce, ne, quant, mill_clas, pens = read_prob()
-    arch = argv[1]
-    metaheur(C, M, K, ce, ne, quant, mill_clas, pens, arch, start)
-    
+    metaheur(C, M, K, ce, ne, quant, mill_clas, pens, start)
+
 main()
