@@ -91,37 +91,53 @@ def rangreedy2(
 
     return act_pen, act_sol
 
-def calc_pen(solution: list[int], ce: list[int], ne: list[int], mill_clas: list[list[bool]]) -> int:
-    """Donada una solució i les dades necessàries del problema (les capacitats de classes i les
-    millores requerides) retorna la penalització de la solució"""
+def calc_pen2(solution: list[int], ce: list[int], ne: list[int], mill_clas: list[list[bool]], last_pen: int, pos1, pos2) -> int:
+    """Donada una solució, dades del problema, i les 2 últimes posicions canviades, calcula la nova penalització"""
     C, M, K = len(solution), len(mill_clas[0]), len(mill_clas)
-    lasts = [0]*M
-    pen = 0
-    for i in range(C):
-        for m in range(M):
-            if mill_clas[solution[i]][m]:
-                lasts[m] += 1
-            if i >= ne[m] and mill_clas[solution[i-ne[m]]][m]:
-                lasts[m] -= 1
-            pen += max(0, lasts[m] - ce[m])
+    if pos1 == pos2: return last_pen
     for m in range(M):
-        count = 0
-        for i in range(C-1, max(C - ne[m], -1), -1):
-            if mill_clas[solution[i]][m]:
-                count += 1
-            if count > ce[m]:
-                pen += count - ce[m]
-    return pen
+        if mill_clas[solution[pos1]][m] != mill_clas[solution[pos2]][m]:
+            new_imp = pos1 if mill_clas[solution[pos1]][m] else pos2
+            no_imp = pos1+pos2-new_imp
+
+            #calculem primer el canvi per la posició que passa de no tenir millora a tenir-la
+            count = 0
+            for i in range(max(0,new_imp -ne[m]), new_imp):
+                count += int(mill_clas[solution[i]][m])
+            
+            for end in range(new_imp, new_imp + ne[m]):
+                if end - ne[m] >= 0 and mill_clas[solution[end - ne[m]]][m]:
+                    count -= 1
+                if end < C and mill_clas[solution[end]][m]:
+                    count += 1
+                if end - ne[m] + 1 <= no_imp <= end: continue
+                if count > ce[m]: last_pen += 1  
+            count = 0
+            for i in range(max(0,no_imp -ne[m]), no_imp):
+                count += int(mill_clas[solution[i]][m])
+            
+            for end in range(no_imp, no_imp + ne[m]):
+                
+                if end - ne[m] >= 0 and mill_clas[solution[end - ne[m]]][m]:
+                    count -= 1
+                if end < C and mill_clas[solution[end]][m]:
+                    count += 1
+                if end - ne[m] + 1 <= new_imp <= end: continue
+                if count >= ce[m]: last_pen -= 1    
+    return last_pen
+
 
 def metaheur(C, M, K, ce, ne, quant, mill_clas, pens, arch, start):
+    """Resolem el problema dels cotxes amb una heurística GRASP utilitzant simulated annealing"""
 
     # Paràmetres de randomització pel simulated annealing (TVAL, ALFAVAL), per quan triguem
-    # en resetejar i per la randomització del greedy
+    # en resetejar (Restart_crit), per la randomització del greedy (alfagrasp) i la seed.
     TVAL = 1. #temperatura de sim anneal
     ALFAVAL = 0.95   #alfa de sim anneal
     RESTART_CRIT = C*C//2   #criteri de fi de sim anneal
     ALFAGRASP = 0.1  #proporció que agafes de candidats
-    random.seed(1001)
+    SEED = 1001
+    random.seed(SEED)
 
     best_pen, best_sol = rangreedy2(C, M, K, ce, ne, quant, mill_clas, pens, ALFAGRASP)
     with open(arch,"w") as f: 
@@ -132,18 +148,20 @@ def metaheur(C, M, K, ce, ne, quant, mill_clas, pens, arch, start):
     alfa = ALFAVAL
     T = TVAL
     real_best_sol, real_best_pen = best_sol, best_pen
-
+    last_pen = best_pen
     while True:
+
         pos1 = random.randint(0, C-1)
         pos2 = random.randint(0, C-1)
         new_sol = best_sol.copy()
         new_sol[pos1], new_sol[pos2] = new_sol[pos2], new_sol[pos1]
-        new_pen = calc_pen(new_sol, ce, ne, mill_clas)
+        new_pen = calc_pen2(new_sol, ce, ne, mill_clas, last_pen, pos1, pos2)
         if iter > RESTART_CRIT:
             T = TVAL
             ALFAGRASP = (9*ALFAGRASP + 0.5)/10 
             new_pen, new_sol = rangreedy2(C, M, K, ce, ne, quant, mill_clas, pens, ALFAGRASP)
             iter = 0
+        
         if new_pen <= best_pen or (random.uniform(0,1) < math.e**(-(new_pen - best_pen)/(T))):
             best_sol = new_sol[:]
             best_pen = new_pen
@@ -155,6 +173,7 @@ def metaheur(C, M, K, ce, ne, quant, mill_clas, pens, arch, start):
                     endi = time.time()
                     print(real_best_pen, round(endi - start,1), file=f)
                     print(' '.join(map(str, real_best_sol)), file=f)
+        last_pen = best_pen
         iter += 1
         T *= alfa
 

@@ -3,7 +3,19 @@ import time
 from sys import *
 
 
-
+def lowbound(ce: list[int], ne: list[int], c2add: int, remaining: list[int]):
+    """ Calculem una fita inferior per la penalització que queda per afegir donats
+    les llistes de capacitats (ce, ne), el cotxes que queden a afegir en total i els
+    cotxes que queden a afegir per cada millora"""
+    min_pen = 0
+    M = len(ne)
+    for m in range(M):
+       if c2add > ce[m]:
+           # Afegim un mínim de penalització contant cada un de les ne[m] + c2add - 1 finestres 
+           # per separat. Calculem els "cotxes totals a afegir" comptant que cadascun està a ne[m]
+           # finestres i li restem la capacitat total sense penalitzacions.
+           min_pen += max(0, remaining[m] * ne[m] - ce[m] * (c2add + ne[m] - ce[m]))
+    return min_pen
 
 def greedy(
         C: int, M: int, K:int, ce: list[int], ne: list[int], 
@@ -19,6 +31,8 @@ def greedy(
     used: list[int] = [0]*K 
     rem: list[int] = [0]*M  # Guarda quants otxes queden per la millora m
     lasts: list[int] = [0]*M # Guarda quants cotxes amb la millora m tenim per l'última finestra de llargada ne[m]
+   
+    
     for m in range(M):
         for k in range(K):
             rem[m] += (quant[k]-used[k])*int(mill_clas[k][m])
@@ -30,6 +44,7 @@ def greedy(
         next_k = 0
         # Enter que guardarà la suma de quants cotxes queden per les millores que requereix la millor classe
         next_val = -1
+        nextb = C*C*M
         for k in range(K):
             if used[k] < quant[k] :
                 # Càlcul de penalitzacions i val
@@ -44,14 +59,14 @@ def greedy(
                         mlas -= 1
                     if mlas > ce[m]:
                         pos_pen += mlas - ce[m]
-                
-                if ((pos_pen, used[k]-quant[k], -val, pens[k]) < 
-                        (next_pen, used[next_k]-quant[next_k], -next_val, pens[next_k])):
+                bou = lowbound(ce, ne, C-i, rem)
+                if ((pos_pen, bou, used[k]-quant[k], -val, pens[k]) < 
+                        (next_pen, nextb, used[next_k]-quant[next_k], -next_val, pens[next_k])):
                     # Triem entre la classe a explorar i la millor trobada i actualitzem
                     next_pen = pos_pen
                     next_k  = k
                     next_val = val
-            
+                    nextb = bou
         # Actualitzem valors
         used[next_k] += 1
         for m in range(M):
@@ -87,7 +102,7 @@ def read_prob() -> tuple[int, int, int, list[int], list[int], list[int], list[li
     for i in range(K):
         read(int)
         quant.append(read(int))
-        for j in range(M):
+        for _ in range(M):
             have = bool(read(int))
             mill_clas[i].append(have)
             if have:
@@ -100,6 +115,7 @@ def main():
     start = time.time()
     C, M, K, ce, ne, quant, mill_clas, pens = read_prob()
     arch = argv[1]
+    
     best_pen, best_sol = greedy(
         C, M, K, ce, ne, quant, mill_clas, pens
         )

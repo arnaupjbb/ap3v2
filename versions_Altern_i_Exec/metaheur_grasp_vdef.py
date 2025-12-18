@@ -114,14 +114,16 @@ def calc_pen(solution: list[int], ce: list[int], ne: list[int], mill_clas: list[
     return pen
 
 def metaheur(C, M, K, ce, ne, quant, mill_clas, pens, arch, start):
+    """Resolem el problema dels cotxes amb una heurística GRASP utilitzant simulated annealing"""
 
     # Paràmetres de randomització pel simulated annealing (TVAL, ALFAVAL), per quan triguem
-    # en resetejar i per la randomització del greedy
+    # en resetejar (Restart_crit), per la randomització del greedy (alfagrasp) i la seed.
     TVAL = 1. #temperatura de sim anneal
     ALFAVAL = 0.95   #alfa de sim anneal
-    RESTART_CRIT = min(C*C//2, 5000)   #criteri de fi de sim anneal
+    RESTART_CRIT = C*C//2   #criteri de fi de sim anneal
     ALFAGRASP = 0.1  #proporció que agafes de candidats
-    random.seed(1001)
+    SEED = 1001
+    random.seed(SEED)
 
     best_pen, best_sol = rangreedy2(C, M, K, ce, ne, quant, mill_clas, pens, ALFAGRASP)
     with open(arch,"w") as f: 
@@ -134,7 +136,6 @@ def metaheur(C, M, K, ce, ne, quant, mill_clas, pens, arch, start):
     real_best_sol, real_best_pen = best_sol, best_pen
 
     while True:
-
         pos1 = random.randint(0, C-1)
         pos2 = random.randint(0, C-1)
         new_sol = best_sol.copy()

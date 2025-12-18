@@ -3,26 +3,35 @@ from sys import *
 import time
 
 
-start = time.time()
-
-def lowbound(ce, ne, idx, C, remaining):
+def lowbound(ce: list[int], ne: list[int], c2add: int, remaining: list[int]):
+    """ Calculem una fita inferior per la penalització que queda per afegir donats
+    les llistes de capacitats (ce, ne), el cotxes que queden a afegir en total i els
+    cotxes que queden a afegir per cada millora"""
     min_pen = 0
     M = len(ne)
-    c2add = C - idx
     for m in range(M):
        if c2add > ce[m]:
+           # Afegim un mínim de penalització contant cada un de les ne[m] + c2add - 1 finestres 
+           # per separat. Calculem els "cotxes totals a afegir" comptant que cadascun està a ne[m]
+           # finestres i li restem la capacitat total sense penalitzacions.
            min_pen += max(0, remaining[m] * ne[m] - ce[m] * (c2add + ne[m] - ce[m]))
     return min_pen
 
 
-def find_best_sol_rec(ce: list[int], ne: list[int], quant: list[int], 
-                    mill_clas: list[list[bool]], used: list[int], sol: list[int],
-                    act_pen: int, best_cost: int, idx: int, lasts: list[int], addprox, remaining) -> int :
-    
+def find_best_sol_rec(ce: list[int], ne: list[int], mill_clas: list[list[bool]], quant: list[int],
+                      sol: list[int], used: list[int], lasts:list[int], remaining: list[int],
+                      act_pen: int, best_cost: int, idx: int, addprox: int, start: float) -> int :
+    """Resolem de manera recursiva el problema de trobar l'ordre per fabricar els cotxes amb menys
+    penalitzacions. Donades capacitats (ce, ne), quines millores requereix cada classe (mill_clas),
+    la quantitat de cotxes de cada classe a utilitzar (quant) i quant n'hem utilitzat (used),
+    la solució parcial (sol), quants cotxes requereixen la millora m en la última finestra de tamany
+    ne[m] (lasts) i els que queden per afegir de cada millora (remaining)."""
     C, M, K = len(sol), len(mill_clas[0]), len(used)
-    if act_pen + addprox + lowbound(ce, ne, idx, C, remaining) >= best_cost : return best_cost
+    if act_pen + addprox + lowbound(ce, ne, C-idx, remaining) >= best_cost : return best_cost
 
     if idx == C :
+        # Si hem completat la solució, sumem la penalització de les últimes 
+        # finestres i, si millorem, actualitzem
         for m in range(M):
             count = 0
             for i in range(C-1, max(C - ne[m], -1), -1):
@@ -32,16 +41,16 @@ def find_best_sol_rec(ce: list[int], ne: list[int], quant: list[int],
                     act_pen += count - ce[m]
                 if act_pen >= best_cost: return best_cost
                 
-                
-        if act_pen < best_cost:
-            best_cost = act_pen
-            with open(argv[1],"w") as f: 
-                endi = time.time()
-                print(best_cost, round(endi - start,1), file=f)
-                print(' '.join(map(str, sol)), file=f)
+        best_cost = act_pen
+        with open(argv[1],"w") as f: 
+            endi = time.time()
+            print(best_cost, round(endi - start,1), file=f)
+            print(' '.join(map(str, sol)), file=f)
         return best_cost
+    
     else :
-        for k in range(K) :
+        for k in range(K):
+            # Intentem afegir a la solució un cotxe de classe k
             if used[k] < quant[k]:
                 addprox = 0
                 sol[idx] = k
@@ -56,7 +65,7 @@ def find_best_sol_rec(ce: list[int], ne: list[int], quant: list[int],
                         pen += lasts[m] - ce[m]
                         addprox += (lasts[m] - ce[m])*(lasts[m] - ce[m]-1)//2
                 
-                best_cost = find_best_sol_rec(ce, ne, quant, mill_clas, used, sol, act_pen + pen,best_cost, idx + 1, lasts, addprox, remaining) 
+                best_cost = find_best_sol_rec(ce, ne, mill_clas, quant, sol, used, lasts, remaining, act_pen + pen,best_cost, idx + 1, addprox, start) 
                 
                 for m in range(M):
                     if mill_clas[k][m]: 
@@ -64,7 +73,9 @@ def find_best_sol_rec(ce: list[int], ne: list[int], quant: list[int],
                         remaining[m] += 1
                     if idx >= ne[m] and mill_clas[sol[idx - ne[m]]][m]: lasts[m] += 1
                 used[k] -= 1
-        return best_cost
+
+    return best_cost
+
 
 
 
@@ -86,19 +97,18 @@ def read_prob() -> tuple[int, int, int, list[int], list[int], list[int], list[li
 
 
 def main():
+    start = time.time()
     C, M, K, ce, ne, quant, mill_clas = read_prob()
     sol = [-1]*C
-    idx = 0 
-    act_pen = 0 
     used = [0]*K
-    best_cost = C*C*M
     lasts = [0]*M
     remaining = [0]*M
     for m in range(M):
         for k in range(K):
             if mill_clas[k][m]:
                 remaining[m] += quant[k]
-    cost = find_best_sol_rec(ce, ne, quant, mill_clas, used, sol, act_pen, best_cost, idx, lasts, 0, remaining)
+
+    cost = find_best_sol_rec(ce, ne, mill_clas, quant, sol, used, lasts, remaining,0, C*C*M, 0, 0, start)
     print(time.time()-start)
     
 main()
