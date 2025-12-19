@@ -6,7 +6,7 @@ import math
 import heapq
 
 
-def lowbound(ce: list[int], ne: list[int], c2add: int, remaining: list[int]):
+def lowbound(ce: list[int], ne: list[int], c2add: int, remaining: list[int]) -> int:
     """ Calculem una fita inferior per la penalització que queda per afegir donats
     les llistes de capacitats (ce, ne), el cotxes que queden a afegir en total i els
     cotxes que queden a afegir per cada millora"""
@@ -44,7 +44,7 @@ def read_prob() -> tuple[int, int, int, list[int], list[int], list[int], list[li
 def rangreedy2(
         C: int, M: int, K:int, ce: list[int], ne: list[int], 
         quant: list[int], mill_clas: list[list[bool]], pens:list[int], alfa
-        ):
+        ) -> tuple[int, list[int]]:
     
     """Donat un problema, generem una solució més o menys propera a un òptim amb un algorisme golafre.
     Per triar entre una classe i una altra prioritza: menor penalització que afegeix a la seqüència actual, 
@@ -145,7 +145,8 @@ def calc_pen2(solution: list[int], ce: list[int], ne: list[int],
     return last_pen
 
 
-def metaheur(C, M, K, ce, ne, quant, mill_clas, pens, start):
+def metaheur(C: int, M: int, K: int, ce: list[int], ne: list[int], quant: list[int], 
+            mill_clas: list[list[bool]], pens: list[int], start: float) -> None:
     """Resolem el problema dels cotxes amb una heurística GRASP utilitzant simulated annealing"""
 
     # Paràmetres de randomització pel simulated annealing (TVAL, ALFAVAL), per quan triguem
@@ -157,7 +158,7 @@ def metaheur(C, M, K, ce, ne, quant, mill_clas, pens, start):
     ALFAGRASP = 0.1  #proporció que agafes de candidats al greedy
     EQLIM = C*C*5  # Límit per iteracions on la solució te penalització
     MAXALFAGRASP = 0.4 # Alfa a la que convergirem
-    SEED = 1213
+    SEED = 122
     random.seed(SEED)
 
     remaining = [0]*M

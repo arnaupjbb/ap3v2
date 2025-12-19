@@ -3,7 +3,7 @@ from sys import *
 import time
 
 
-def lowbound(ce: list[int], ne: list[int], c2add: int, remaining: list[int]):
+def lowbound(ce: list[int], ne: list[int], c2add: int, remaining: list[int]) -> int:
     """ Calculem una fita inferior per la penalització que queda per afegir donats
     les llistes de capacitats (ce, ne), el cotxes que queden a afegir en total i els
     cotxes que queden a afegir per cada millora"""

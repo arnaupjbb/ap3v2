@@ -3,24 +3,10 @@ import time
 from sys import *
 
 
-def lowbound(ce: list[int], ne: list[int], c2add: int, remaining: list[int]):
-    """ Calculem una fita inferior per la penalització que queda per afegir donats
-    les llistes de capacitats (ce, ne), el cotxes que queden a afegir en total i els
-    cotxes que queden a afegir per cada millora"""
-    min_pen = 0
-    M = len(ne)
-    for m in range(M):
-       if c2add > ce[m]:
-           # Afegim un mínim de penalització contant cada un de les ne[m] + c2add - 1 finestres 
-           # per separat. Calculem els "cotxes totals a afegir" comptant que cadascun està a ne[m]
-           # finestres i li restem la capacitat total sense penalitzacions.
-           min_pen += max(0, remaining[m] * ne[m] - ce[m] * (c2add + ne[m] - ce[m]))
-    return min_pen
-
 def greedy(
         C: int, M: int, K:int, ce: list[int], ne: list[int], 
         quant: list[int], mill_clas: list[list[bool]], pens:list[int]
-        ):
+        ) -> tuple[int, list[int]]:
     
     """Donat un problema, generem una solució més o menys propera a un òptim amb un algorisme golafre.
     Per triar entre una classe i una altra prioritza: menor penalització que afegeix a la seqüència actual, 
