@@ -15,7 +15,7 @@ def greedy(
     act_sol: list[int] = []
     act_pen: int = 0
     used: list[int] = [0]*K 
-    rem: list[int] = [0]*M  # Guarda quants otxes queden per la millora m
+    rem: list[int] = [0]*M  # Guarda quants cotxes queden per la millora m
     lasts: list[int] = [0]*M # Guarda quants cotxes amb la millora m tenim per l'última finestra de llargada ne[m]
    
     

@@ -153,7 +153,7 @@ def metaheur(C: int, M: int, K: int, ce: list[int], ne: list[int], quant: list[i
     # en resetejar (Restart_crit), per la randomització del greedy (alfagrasp) i la seed.
     TVAL = 1. # Temperatura de sim anneal
     ALFAVAL = 0.999  # Alfa de sim anneal
-    EQLIM = C*C*3  # Límit per iteracions on la solució te penalització
+    EQLIM = C*C*3  # Límit per eqcas
     MAXALFAGRASP = 0.3 # Alfa a la que convergirem
     ALFAGRASP = 0.1  #proporció que agafes de candidats al greedy
     SEED = 122
@@ -182,12 +182,14 @@ def metaheur(C: int, M: int, K: int, ce: list[int], ne: list[int], quant: list[i
     while real_best_pen > MINIMUM_POSSIBLE_PEN:
         new_pen = C*C*M
         if eqcas > EQLIM:
+            # Reinici (acabament cerca local) modificant lleugerament els paràmetres
             EQLIM += C*C*2
             T = TVAL
             ALFAGRASP = (9*ALFAGRASP + MAXALFAGRASP)/10
             best_pen, best_sol = rangreedy2(C, M, K, ce, ne, quant, mill_clas, pens, ALFAGRASP)
             iter = 0
             eqcas = 0
+            
             if best_pen < real_best_pen:
                 real_best_pen = best_pen
                 real_best_sol = best_sol[:]
@@ -202,8 +204,8 @@ def metaheur(C: int, M: int, K: int, ce: list[int], ne: list[int], quant: list[i
             if best_sol[pos1] == best_sol[pos2]: 
                 # si el veí és ell mateix
                 iter += 1
-                T *= alfa
                 eqcas += 1
+                T *= alfa
                 continue
             best_sol[pos1], best_sol[pos2] = best_sol[pos2], best_sol[pos1]
             new_pen = calc_pen2(best_sol, ce, ne, mill_clas, last_pen, pos1, pos2)
