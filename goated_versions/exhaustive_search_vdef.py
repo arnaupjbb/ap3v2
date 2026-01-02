@@ -102,7 +102,7 @@ def main():
     sol = [-1]*C
     used = [0]*K
     lasts = [0]*M
-    remaining = [0]*M
+    remaining = [0]*M # quants cotxes queden per afegir que requereixin cada millora
     for m in range(M):
         for k in range(K):
             if mill_clas[k][m]:

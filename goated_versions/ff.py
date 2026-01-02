@@ -151,12 +151,13 @@ def metaheur(C: int, M: int, K: int, ce: list[int], ne: list[int], quant: list[i
 
     # Paràmetres de randomització pel simulated annealing (TVAL, ALFAVAL), per quan triguem
     # en resetejar (Restart_crit), per la randomització del greedy (alfagrasp) i la seed.
-    TVAL = 1. # Temperatura de sim anneal
-    ALFAVAL = 0.999  # Alfa de sim anneal
-    EQLIM = C*C*3  # Límit per iteracions on la solució te penalització
-    MAXALFAGRASP = 0.3 # Alfa a la que convergirem
-    ALFAGRASP = 0.1  #proporció que agafes de candidats al greedy
-    SEED = 122
+    TVAL = 0.1 # Temperatura de sim anneal
+    ALFAVAL = 0.9995  # Alfa de sim anneal
+    ALFAGRASP = 0.25  #proporció que agafes de candidats al greedy
+    MAXALFAGRASP = 0.4 # Alfa a la que convergirem
+    EQLIM = C*C*C//K   # Criteri de fi de sim anneal (màxim per eqcas)
+    RESTART_CRIT = C*C//2  # Criteri de fi de sim anneal (màxim per iter)
+    SEED = 203
     random.seed(SEED)
 
     remaining = [0]*M
@@ -175,14 +176,16 @@ def metaheur(C: int, M: int, K: int, ce: list[int], ne: list[int], quant: list[i
     T = TVAL
     real_best_sol, real_best_pen = best_sol, best_pen
     last_pen = best_pen
-    iter = 0 # iteracions des de l'últim reset
-    eqcas = 0 # iteracions en què canviem la solució 
-              # (si el vei es ell mateix considerem que és un canvi)
-    
+    a = 0
+    iter = 0 #iteracions des de l'últim cas millor o igual a la anterior millor solució
+    eqcas = 0 #iteracions des de l'últim cas millor a l'anterior millor solució
     while real_best_pen > MINIMUM_POSSIBLE_PEN:
-        new_pen = C*C*M
-        if eqcas > EQLIM:
-            EQLIM += C*C*2
+        new_pen = -1
+        if False or iter > RESTART_CRIT or eqcas > EQLIM:
+            a += 1
+            print(a)
+            # reiniciem cerca amb una nova solució inicial
+            RESTART_CRIT = min(C*C*C, RESTART_CRIT + C*C//10)
             T = TVAL
             ALFAGRASP = (9*ALFAGRASP + MAXALFAGRASP)/10
             best_pen, best_sol = rangreedy2(C, M, K, ce, ne, quant, mill_clas, pens, ALFAGRASP)
@@ -195,14 +198,12 @@ def metaheur(C: int, M: int, K: int, ce: list[int], ne: list[int], quant: list[i
                     endi = time.time()
                     print(real_best_pen, round(endi - start,1), file=f)
                     print(' '.join(map(str, real_best_sol)), file=f)
-        else: 
-            # Dos solucions són veïnes si només són diferents en 2 posicions   
+        else:    
+            # Dos solucions són veines si
             pos1 = random.randint(0, C-1)
             pos2 = random.randint(0, C-1)
             if best_sol[pos1] == best_sol[pos2]: 
-                # si el veí és ell mateix
-                iter += 1
-                T *= alfa
+                iter = 0
                 eqcas += 1
                 continue
             best_sol[pos1], best_sol[pos2] = best_sol[pos2], best_sol[pos1]
@@ -210,10 +211,14 @@ def metaheur(C: int, M: int, K: int, ce: list[int], ne: list[int], quant: list[i
         
             if new_pen <= best_pen or (random.uniform(0,1) < math.e**(-(new_pen - best_pen)/(T))):
                 best_pen = new_pen
-                eqcas += 1
+                if best_pen == real_best_pen:
+                    # Allarguem la cerca en aquesta solució
+                    iter = 0
+                    eqcas += 1
                 if best_pen < real_best_pen:
                     real_best_pen = new_pen
                     real_best_sol = best_sol[:]
+                    iter = 0
                     eqcas = 0
                     
                     with open(argv[1],"w") as f: 
@@ -221,10 +226,10 @@ def metaheur(C: int, M: int, K: int, ce: list[int], ne: list[int], quant: list[i
                         print(real_best_pen, round(endi - start,1), file=f)
                         print(' '.join(map(str, real_best_sol)), file=f)
             else:
-                # Si no ens hem quedat amb al nova solució, tornem a la posició anterior
+                # Si no hem quedat amb al nova solució, tornem a la posició anterior
                 best_sol[pos1], best_sol[pos2] = best_sol[pos2], best_sol[pos1]
             
-        # Preparem la següent iteració
+        # Preparem següent iteració
         last_pen = best_pen
         iter += 1
         T *= alfa
